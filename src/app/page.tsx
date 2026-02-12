@@ -7,6 +7,7 @@ import {
   Zap,
   MessageCircle,
 } from "lucide-react";
+import Link from "next/link";
 import PreviewSection from "./components/PreviewSection";
 import WaitlistForm from "./components/WaitlistForm";
 
@@ -59,12 +60,20 @@ export default function Home() {
               you<span className="text-accent">Stopped</span>
             </span>
           </div>
-          <a
-            href="#waitlist"
-            className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background transition-all hover:bg-accent-dim hover:scale-105"
-          >
-            사전 등록
-          </a>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/blog"
+              className="text-sm font-medium text-foreground hover:text-accent transition-colors"
+            >
+              블로그
+            </Link>
+            <a
+              href="#waitlist"
+              className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background transition-all hover:bg-accent-dim hover:scale-105"
+            >
+              사전 등록
+            </a>
+          </div>
         </div>
       </nav>
 
