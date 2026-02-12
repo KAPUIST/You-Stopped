@@ -370,17 +370,19 @@ export default function Home() {
 
         <div className="relative mx-auto max-w-2xl px-6 text-center">
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl mb-4">
-            <span className="text-accent">youStopped</span>에
+            러닝 생활에
             <br />
-            관심 있으신가요?
+            <span className="text-accent">불편한 점</span>이 있으신가요?
           </h2>
           <p className="text-muted mb-12">
-            출시 알림을 받거나, 오픈채팅에서 직접 의견을 나눠주세요.
+            오픈채팅방에 오셔서 추가되었으면 하는 기능이나
+            <br className="hidden sm:block" />
+            러닝 생활의 불편함을 알려주세요. 해결해드리겠습니다.
           </p>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
             <a
-              href="https://open.kakao.com/o/gYOURLINK"
+              href="https://open.kakao.com/o/gMoOA5fi"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-bold text-background transition-all hover:bg-accent-dim hover:scale-105"
