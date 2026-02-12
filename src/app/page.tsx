@@ -8,6 +8,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import PreviewSection from "./components/PreviewSection";
+import WaitlistForm from "./components/WaitlistForm";
 
 function MockDataRow({
   date,
@@ -79,7 +80,7 @@ export default function Home() {
             <div className="flex flex-col gap-8">
               <div className="inline-flex w-fit items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm text-accent">
                 <Zap className="h-3.5 w-3.5" />
-                나만의 AI 러닝 코치
+                나만의 러닝 코치
               </div>
 
               <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
@@ -380,22 +381,17 @@ export default function Home() {
             러닝 생활의 불편함을 알려주세요. 해결해드리겠습니다.
           </p>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+          <WaitlistForm />
+
+          <div className="mt-6 flex justify-center">
             <a
               href="https://open.kakao.com/o/gMoOA5fi"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-bold text-background transition-all hover:bg-accent-dim hover:scale-105"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-card"
             >
-              <MessageCircle className="h-5 w-5" />
-              카카오톡 오픈채팅
-            </a>
-            <a
-              href="mailto:hello@youstopped.com"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-8 py-4 text-base font-medium text-foreground transition-colors hover:bg-card"
-            >
-              이메일로 알림 받기
-              <ArrowRight className="h-4 w-4" />
+              <MessageCircle className="h-4 w-4" />
+              카카오톡 오픈채팅 참여하기
             </a>
           </div>
         </div>
