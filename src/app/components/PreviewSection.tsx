@@ -32,8 +32,8 @@ function Tab({
       onClick={onClick}
       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
         active
-          ? "bg-[#c8ff00] text-[#09090b]"
-          : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+          ? "bg-accent text-background"
+          : "bg-border text-muted hover:bg-card-hover"
       }`}
     >
       {label}
@@ -44,18 +44,18 @@ function Tab({
 // ─── 대시보드 오버뷰 ───
 function DashboardOverview() {
   return (
-    <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-[#c8ff00]/30">
+    <div className="mb-8 rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#c8ff00]">
-            <Activity className="h-4 w-4 text-[#09090b]" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
+            <Activity className="h-4 w-4 text-background" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-zinc-50">
+            <div className="text-sm font-semibold text-foreground">
               2월 러닝 리포트
             </div>
-            <div className="text-[11px] text-zinc-500">
+            <div className="text-[11px] text-foreground0">
               2026.02.01 — 02.12 · 12일간 기록
             </div>
           </div>
@@ -125,21 +125,21 @@ function DashboardOverview() {
         ].map((m) => (
           <div
             key={m.label}
-            className="rounded-xl border border-zinc-800/80 bg-[#09090b]/60 p-4"
+            className="rounded-xl border border-border bg-background/60 p-4"
           >
             <div className="flex items-center gap-1.5 mb-2">
-              <m.icon className="h-3.5 w-3.5 text-zinc-500" />
-              <span className="text-[10px] text-zinc-500">{m.label}</span>
+              <m.icon className="h-3.5 w-3.5 text-foreground0" />
+              <span className="text-[10px] text-foreground0">{m.label}</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold font-mono text-zinc-50">
+              <span className="text-xl font-bold font-mono text-foreground">
                 {m.value}
               </span>
-              <span className="text-xs text-zinc-500">{m.unit}</span>
+              <span className="text-xs text-foreground0">{m.unit}</span>
               {"trend" in m && m.trend && (
                 <span className="ml-auto">
                   {m.trend === "up" ? (
-                    <ArrowUp className="h-3 w-3 text-[#c8ff00]" />
+                    <ArrowUp className="h-3 w-3 text-accent" />
                   ) : m.trend === "up_bad" ? (
                     <ArrowUp className="h-3 w-3 text-red-400" />
                   ) : (
@@ -148,11 +148,11 @@ function DashboardOverview() {
                 </span>
               )}
             </div>
-            <div className="mt-1.5 text-[10px] text-zinc-600">{m.sub}</div>
+            <div className="mt-1.5 text-[10px] text-muted/70">{m.sub}</div>
             {m.pct !== null && (
-              <div className="mt-2 h-1 w-full rounded-full bg-zinc-800">
+              <div className="mt-2 h-1 w-full rounded-full bg-border">
                 <div
-                  className="h-full rounded-full bg-[#c8ff00]/60"
+                  className="h-full rounded-full bg-accent/60"
                   style={{ width: `${m.pct}%` }}
                 />
               </div>
@@ -164,8 +164,8 @@ function DashboardOverview() {
       {/* Mini week heatmap + AI summary */}
       <div className="grid sm:grid-cols-[1fr_1fr] gap-4">
         {/* Weekly activity */}
-        <div className="rounded-xl border border-zinc-800/80 bg-[#09090b]/60 p-4">
-          <div className="text-[10px] text-zinc-500 mb-3">이번 주 활동</div>
+        <div className="rounded-xl border border-border bg-background/60 p-4">
+          <div className="text-[10px] text-foreground0 mb-3">이번 주 활동</div>
           <div className="flex gap-1.5">
             {[
               { day: "월", km: 11.25, active: true },
@@ -180,25 +180,25 @@ function DashboardOverview() {
                 <div
                   className={`w-full aspect-square rounded-md flex items-center justify-center text-[9px] font-mono ${
                     !d.active
-                      ? "bg-zinc-800/50 text-zinc-700"
+                      ? "bg-card-hover/50 text-muted/50"
                       : d.km >= 10
-                        ? "bg-[#c8ff00]/30 text-[#c8ff00]"
-                        : "bg-[#c8ff00]/10 text-[#c8ff00]/60"
+                        ? "bg-accent/30 text-accent"
+                        : "bg-accent/10 text-accent/60"
                   }`}
                 >
                   {d.active ? d.km.toFixed(1) : "—"}
                 </div>
-                <span className="text-[9px] text-zinc-600">{d.day}</span>
+                <span className="text-[9px] text-muted/70">{d.day}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* AI quick summary */}
-        <div className="rounded-xl border border-[#c8ff00]/10 bg-[#c8ff00]/[0.03] p-4">
+        <div className="rounded-xl border border-accent/10 bg-accent/[0.03] p-4">
           <div className="flex items-center gap-1.5 mb-3">
-            <BrainCircuit className="h-3.5 w-3.5 text-[#c8ff00]" />
-            <span className="text-[10px] text-[#c8ff00]">AI 주간 요약</span>
+            <BrainCircuit className="h-3.5 w-3.5 text-accent" />
+            <span className="text-[10px] text-accent">AI 주간 요약</span>
           </div>
           <div className="flex flex-col gap-2">
             {[
@@ -208,14 +208,14 @@ function DashboardOverview() {
               "다음 주 목표: 볼륨 유지 + 회복일 추가",
             ].map((line, i) => (
               <div key={i} className="flex items-start gap-2">
-                <span className="text-[#c8ff00]/40 text-[10px] mt-0.5">
+                <span className="text-accent/40 text-[10px] mt-0.5">
                   {i === 2 ? "⚠" : "→"}
                 </span>
                 <span
                   className={`text-[11px] leading-relaxed ${
                     i === 2
                       ? "text-amber-400"
-                      : "text-zinc-400"
+                      : "text-muted"
                   }`}
                 >
                   {line}
@@ -336,10 +336,10 @@ function PaceChart() {
   const data = paceData[selected];
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-[#c8ff00]/30">
+    <div className="rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="h-5 w-5 text-[#c8ff00]" />
-        <span className="text-sm font-semibold text-zinc-50">페이스 성장 추이</span>
+        <TrendingUp className="h-5 w-5 text-accent" />
+        <span className="text-sm font-semibold text-foreground">페이스 성장 추이</span>
       </div>
 
       <div className="flex gap-1.5 mb-5 overflow-x-auto">
@@ -354,7 +354,7 @@ function PaceChart() {
       </div>
 
       <div className="relative pl-8">
-        <div className="absolute left-0 top-0 h-36 flex flex-col justify-between text-[10px] text-zinc-500">
+        <div className="absolute left-0 top-0 h-36 flex flex-col justify-between text-[10px] text-foreground0">
           <span>Best</span>
           <span />
           <span />
@@ -368,31 +368,31 @@ function PaceChart() {
             >
               <div
                 className={`w-full rounded-t-md transition-all duration-300 ${
-                  bar.dim ? "bg-[#c8ff00]/20" : "bg-[#c8ff00]/50"
+                  bar.dim ? "bg-accent/20" : "bg-accent/50"
                 }`}
                 style={{ height: `${bar.h}px` }}
               />
-              <span className="text-[9px] text-zinc-500">{bar.m}</span>
+              <span className="text-[9px] text-foreground0">{bar.m}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between rounded-lg bg-[#c8ff00]/5 border border-[#c8ff00]/20 p-3">
-        <span className="text-xs text-zinc-400">{data.label} 페이스</span>
+      <div className="mt-4 flex items-center justify-between rounded-lg bg-accent/5 border border-accent/20 p-3">
+        <span className="text-xs text-muted">{data.label} 페이스</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-mono text-zinc-500 line-through">
+          <span className="text-xs font-mono text-foreground0 line-through">
             {data.from}
           </span>
-          <ArrowRight className="h-3 w-3 text-[#c8ff00]" />
-          <span className="text-sm font-mono font-bold text-[#c8ff00]">
+          <ArrowRight className="h-3 w-3 text-accent" />
+          <span className="text-sm font-mono font-bold text-accent">
             {data.to}
           </span>
         </div>
       </div>
 
-      <p className="mt-3 text-[11px] text-zinc-400 leading-relaxed">
-        <span className="text-[#c8ff00] font-medium">AI 분석:</span> {data.insight}
+      <p className="mt-3 text-[11px] text-muted leading-relaxed">
+        <span className="text-accent font-medium">AI 분석:</span> {data.insight}
       </p>
     </div>
   );
@@ -434,18 +434,18 @@ function ShoeCard() {
       case "신규":
         return "bg-blue-500/20 text-blue-400";
       case "메인":
-        return "bg-[#c8ff00]/20 text-[#c8ff00]";
+        return "bg-accent/20 text-accent";
       default:
-        return "bg-zinc-700 text-zinc-400";
+        return "bg-card-hover text-muted";
     }
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-[#c8ff00]/30">
+    <div className="rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Footprints className="h-5 w-5 text-[#c8ff00]" />
-          <span className="text-sm font-semibold text-zinc-50">신발 마일리지</span>
+          <Footprints className="h-5 w-5 text-accent" />
+          <span className="text-sm font-semibold text-foreground">신발 마일리지</span>
         </div>
       </div>
 
@@ -465,7 +465,7 @@ function ShoeCard() {
           <div key={shoe.name}>
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-zinc-200">
+                <span className="text-xs font-medium text-foreground/80">
                   {shoe.name}
                 </span>
                 <span
@@ -474,18 +474,18 @@ function ShoeCard() {
                   {shoe.status}
                 </span>
               </div>
-              <span className="text-xs font-mono text-zinc-400">
+              <span className="text-xs font-mono text-muted">
                 {shoe.total}
-                <span className="text-zinc-600">/800</span>km
+                <span className="text-muted/70">/800</span>km
               </span>
             </div>
-            <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden relative">
-              <div className="absolute right-0 top-0 bottom-0 w-px bg-zinc-600" />
+            <div className="h-2 w-full rounded-full bg-border overflow-hidden relative">
+              <div className="absolute right-0 top-0 bottom-0 w-px bg-muted/40" />
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
                   shoe.pct > 70
                     ? "bg-gradient-to-r from-[#c8ff00] to-red-400"
-                    : "bg-[#c8ff00]/60"
+                    : "bg-accent/60"
                 }`}
                 style={{ width: `${shoe.pct}%` }}
               />
@@ -537,10 +537,10 @@ function PRCard() {
   const [view, setView] = useState<PRView>("기록");
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-[#c8ff00]/30">
+    <div className="rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
       <div className="flex items-center gap-2 mb-4">
-        <Trophy className="h-5 w-5 text-[#c8ff00]" />
-        <span className="text-sm font-semibold text-zinc-50">개인 기록 (PR)</span>
+        <Trophy className="h-5 w-5 text-accent" />
+        <span className="text-sm font-semibold text-foreground">개인 기록 (PR)</span>
       </div>
 
       <div className="flex gap-1.5 mb-5">
@@ -557,21 +557,21 @@ function PRCard() {
                 key={pr.dist}
                 className={`rounded-xl border p-3 text-center ${
                   pr.status === "미기록"
-                    ? "border-dashed border-zinc-700"
-                    : "border-zinc-800 bg-[#09090b]/50"
+                    ? "border-dashed border-border/60"
+                    : "border-border bg-background/50"
                 }`}
               >
-                <div className="text-[10px] text-zinc-500 mb-1">{pr.dist}</div>
+                <div className="text-[10px] text-foreground0 mb-1">{pr.dist}</div>
                 <div
                   className={`text-sm font-mono font-bold ${
-                    pr.status === "미기록" ? "text-zinc-600" : "text-zinc-50"
+                    pr.status === "미기록" ? "text-muted/70" : "text-foreground"
                   }`}
                 >
                   {pr.time}
                 </div>
                 <div
                   className={`text-[10px] ${
-                    pr.pace ? "text-[#c8ff00]" : "text-zinc-600"
+                    pr.pace ? "text-accent" : "text-muted/70"
                   }`}
                 >
                   {pr.pace ? `${pr.pace}/km` : "미기록"}
@@ -579,9 +579,9 @@ function PRCard() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center gap-2 rounded-lg bg-[#c8ff00]/5 border border-[#c8ff00]/20 p-3">
-            <Trophy className="h-3.5 w-3.5 text-[#c8ff00] flex-shrink-0" />
-            <span className="text-xs text-[#c8ff00]">
+          <div className="mt-4 flex items-center gap-2 rounded-lg bg-accent/5 border border-accent/20 p-3">
+            <Trophy className="h-3.5 w-3.5 text-accent flex-shrink-0" />
+            <span className="text-xs text-accent">
               10K 신기록! 45:59 (이전: 46:57에서 58초 단축)
             </span>
           </div>
@@ -594,10 +594,10 @@ function PRCard() {
             {prGoals.map((g) => (
               <div
                 key={g.dist}
-                className="rounded-xl border border-zinc-800 bg-[#09090b]/50 p-3 text-center"
+                className="rounded-xl border border-border bg-background/50 p-3 text-center"
               >
-                <div className="text-[10px] text-zinc-500 mb-1">{g.dist}</div>
-                <div className="text-sm font-mono font-bold text-zinc-50">
+                <div className="text-[10px] text-foreground0 mb-1">{g.dist}</div>
+                <div className="text-sm font-mono font-bold text-foreground">
                   {g.time}
                 </div>
                 <div className="flex items-center justify-center gap-0.5 text-[10px]">
@@ -605,16 +605,16 @@ function PRCard() {
                     <span className="text-blue-400">{g.gap}</span>
                   ) : (
                     <>
-                      <ArrowDown className="h-2.5 w-2.5 text-[#c8ff00]" />
-                      <span className="text-[#c8ff00]">{g.gap}</span>
+                      <ArrowDown className="h-2.5 w-2.5 text-accent" />
+                      <span className="text-accent">{g.gap}</span>
                     </>
                   )}
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-[11px] text-zinc-400 leading-relaxed">
-            <span className="text-[#c8ff00] font-medium">AI 분석:</span> 10K
+          <p className="mt-4 text-[11px] text-muted leading-relaxed">
+            <span className="text-accent font-medium">AI 분석:</span> 10K
             서브45 달성이 가장 가까운 목표입니다. 주 1회 4:20 페이스 인터벌을 추가하세요.
           </p>
         </>
@@ -626,18 +626,18 @@ function PRCard() {
             {prPredict.map((p) => (
               <div
                 key={p.dist}
-                className="rounded-xl border border-[#c8ff00]/10 bg-[#c8ff00]/5 p-3 text-center"
+                className="rounded-xl border border-accent/10 bg-accent/5 p-3 text-center"
               >
-                <div className="text-[10px] text-zinc-500 mb-1">{p.dist}</div>
-                <div className="text-sm font-mono font-bold text-[#c8ff00]">
+                <div className="text-[10px] text-foreground0 mb-1">{p.dist}</div>
+                <div className="text-sm font-mono font-bold text-accent">
                   {p.time}
                 </div>
-                <div className="text-[10px] text-zinc-500">{p.basis}</div>
+                <div className="text-[10px] text-foreground0">{p.basis}</div>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-[11px] text-zinc-400 leading-relaxed">
-            <span className="text-[#c8ff00] font-medium">VDOT 52 기준:</span>{" "}
+          <p className="mt-4 text-[11px] text-muted leading-relaxed">
+            <span className="text-accent font-medium">VDOT 52 기준:</span>{" "}
             최근 10K 기록과 훈련 데이터를 종합하여 산출한 예측 기록입니다. 현재
             컨디션 유지 시 달성 가능한 수치입니다.
           </p>
@@ -654,10 +654,10 @@ function AICard() {
   const [view, setView] = useState<AIView>("컨디션");
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-[#c8ff00]/30">
+    <div className="rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
       <div className="flex items-center gap-2 mb-4">
-        <BrainCircuit className="h-5 w-5 text-[#c8ff00]" />
-        <span className="text-sm font-semibold text-zinc-50">AI 데이터 분석</span>
+        <BrainCircuit className="h-5 w-5 text-accent" />
+        <span className="text-sm font-semibold text-foreground">AI 데이터 분석</span>
       </div>
 
       <div className="flex gap-1.5 mb-5">
@@ -676,9 +676,9 @@ function AICard() {
                 피로 지표 상승
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-muted leading-relaxed">
               최근 5km 러닝에서{" "}
-              <span className="text-zinc-200 font-medium">페이스 5:21 동일</span>
+              <span className="text-foreground/80 font-medium">페이스 5:21 동일</span>
               하지만
               <span className="text-amber-400 font-medium">
                 {" "}
@@ -689,8 +689,8 @@ function AICard() {
           </div>
 
           {/* 컨디션 지표 */}
-          <div className="rounded-xl bg-[#09090b]/50 border border-zinc-800 p-4">
-            <div className="text-xs font-medium text-zinc-200 mb-3">
+          <div className="rounded-xl bg-background/50 border border-border p-4">
+            <div className="text-xs font-medium text-foreground/80 mb-3">
               주간 컨디션 스코어
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
@@ -701,20 +701,20 @@ function AICard() {
                 { label: "스피드", score: 88, trend: "up" },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className="text-lg font-bold text-zinc-50">
+                  <div className="text-lg font-bold text-foreground">
                     {item.score}
                   </div>
                   <div className="flex items-center justify-center gap-0.5">
                     {item.trend === "up" && (
-                      <ArrowUp className="h-2.5 w-2.5 text-[#c8ff00]" />
+                      <ArrowUp className="h-2.5 w-2.5 text-accent" />
                     )}
                     {item.trend === "down" && (
                       <ArrowDown className="h-2.5 w-2.5 text-red-400" />
                     )}
                     {item.trend === "same" && (
-                      <Minus className="h-2.5 w-2.5 text-zinc-500" />
+                      <Minus className="h-2.5 w-2.5 text-foreground0" />
                     )}
-                    <span className="text-[10px] text-zinc-500">
+                    <span className="text-[10px] text-foreground0">
                       {item.label}
                     </span>
                   </div>
@@ -723,8 +723,8 @@ function AICard() {
             </div>
           </div>
 
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            <span className="text-[#c8ff00] font-medium">종합:</span> 회복력
+          <p className="text-[11px] text-muted leading-relaxed">
+            <span className="text-accent font-medium">종합:</span> 회복력
             점수 하락 주의. 이번 주는 강도를 70%로 낮추는 것을 권장합니다.
           </p>
         </div>
@@ -739,9 +739,9 @@ function AICard() {
                 회복 패턴
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-muted leading-relaxed">
               3일 연속 고강도 후{" "}
-              <span className="text-zinc-200 font-medium">페이스 평균 12% 하락</span>
+              <span className="text-foreground/80 font-medium">페이스 평균 12% 하락</span>
               . 회복일을{" "}
               <span className="text-blue-400 font-medium">2일→3일 조정</span>
               하면 퍼포먼스 유지 가능.
@@ -755,25 +755,25 @@ function AICard() {
                 최적 훈련 주기
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-muted leading-relaxed">
               데이터 분석 결과 당신의 최적 사이클:{" "}
-              <span className="text-zinc-200 font-medium">
+              <span className="text-foreground/80 font-medium">
                 고강도 2일 → 회복 1일 → 중강도 1일 → 휴식
               </span>
               . 이 패턴에서 기록 갱신이 가장 많았습니다.
             </p>
           </div>
 
-          <div className="rounded-xl bg-[#c8ff00]/5 border border-[#c8ff00]/20 p-4">
+          <div className="rounded-xl bg-accent/5 border border-accent/20 p-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[#c8ff00] text-xs">🌡️</span>
-              <span className="text-xs font-medium text-[#c8ff00]">
+              <span className="text-accent text-xs">🌡️</span>
+              <span className="text-xs font-medium text-accent">
                 환경 상관관계
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-muted leading-relaxed">
               트레드밀 대비 트랙 훈련 시{" "}
-              <span className="text-zinc-200 font-medium">
+              <span className="text-foreground/80 font-medium">
                 페이스 8% 빠르지만 심박 6% 높음
               </span>
               . 트랙 훈련 비중을 늘리면 실전 적응력이 올라갑니다.
@@ -784,8 +784,8 @@ function AICard() {
 
       {view === "추천" && (
         <div className="flex flex-col gap-3">
-          <div className="rounded-xl bg-[#09090b]/50 border border-zinc-800 p-4">
-            <div className="text-xs font-medium text-zinc-200 mb-3">
+          <div className="rounded-xl bg-background/50 border border-border p-4">
+            <div className="text-xs font-medium text-foreground/80 mb-3">
               이번 주 맞춤 훈련
             </div>
             <div className="flex flex-col gap-2">
@@ -824,11 +824,11 @@ function AICard() {
                   className="flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded bg-[#c8ff00]/10 text-[10px] font-bold text-[#c8ff00]">
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-accent/10 text-[10px] font-bold text-accent">
                       {plan.day}
                     </span>
-                    <span className="text-zinc-300">{plan.workout}</span>
-                    <span className="font-mono text-zinc-600">
+                    <span className="text-foreground/70">{plan.workout}</span>
+                    <span className="font-mono text-muted/70">
                       {plan.pace}/km
                     </span>
                   </div>
@@ -840,10 +840,10 @@ function AICard() {
             </div>
           </div>
 
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            <span className="text-[#c8ff00] font-medium">근거:</span> 현재
+          <p className="text-[11px] text-muted leading-relaxed">
+            <span className="text-accent font-medium">근거:</span> 현재
             피로도(회복력 61점) 감안하여 주 총 거리를 지난주 67km에서{" "}
-            <span className="text-zinc-200 font-medium">42km(-37%)</span>으로
+            <span className="text-foreground/80 font-medium">42km(-37%)</span>으로
             조정. 다음 주 다시 볼륨 업합니다.
           </p>
         </div>
@@ -1100,9 +1100,9 @@ function TrainingPlan() {
       case "easy":
         return "bg-green-500/20 text-green-400";
       case "race":
-        return "bg-[#c8ff00]/20 text-[#c8ff00]";
+        return "bg-accent/20 text-accent";
       default:
-        return "bg-zinc-800 text-zinc-500";
+        return "bg-border text-foreground0";
     }
   };
 
@@ -1122,11 +1122,11 @@ function TrainingPlan() {
   };
 
   return (
-    <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all hover:border-[#c8ff00]/30">
+    <div className="mt-8 rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-lg">🗓️</span>
-          <span className="text-sm font-semibold text-zinc-50">
+          <span className="text-sm font-semibold text-foreground">
             AI 맞춤 훈련 플랜
           </span>
         </div>
@@ -1142,15 +1142,15 @@ function TrainingPlan() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4 rounded-lg bg-[#c8ff00]/5 border border-[#c8ff00]/10 px-4 py-2.5">
-        <span className="text-xs text-zinc-400">{plan.summary}</span>
-        <span className="text-xs font-mono font-bold text-[#c8ff00]">
+      <div className="flex items-center justify-between mb-4 rounded-lg bg-accent/5 border border-accent/10 px-4 py-2.5">
+        <span className="text-xs text-muted">{plan.summary}</span>
+        <span className="text-xs font-mono font-bold text-accent">
           주간 {plan.totalKm}
         </span>
       </div>
 
       {/* Table header */}
-      <div className="hidden sm:grid grid-cols-[40px_60px_1fr_56px_56px_60px_1fr] gap-2 px-3 py-2 text-[10px] text-zinc-500 border-b border-zinc-800 mb-1">
+      <div className="hidden sm:grid grid-cols-[40px_60px_1fr_56px_56px_60px_1fr] gap-2 px-3 py-2 text-[10px] text-foreground0 border-b border-border mb-1">
         <span>요일</span>
         <span>분류</span>
         <span>훈련</span>
@@ -1167,36 +1167,36 @@ function TrainingPlan() {
             key={d.day}
             className={`grid sm:grid-cols-[40px_60px_1fr_56px_56px_60px_1fr] grid-cols-[40px_1fr_56px] gap-2 px-3 py-2.5 text-xs font-mono rounded-lg transition-colors ${
               d.intensity === "race"
-                ? "bg-[#c8ff00]/10 border border-[#c8ff00]/20"
+                ? "bg-accent/10 border border-accent/20"
                 : d.intensity === "rest"
-                  ? "text-zinc-600"
-                  : "text-zinc-300 hover:bg-zinc-800/50"
+                  ? "text-muted/70"
+                  : "text-foreground/70 hover:bg-card-hover/50"
             }`}
           >
             <span
               className={`flex h-6 w-6 items-center justify-center rounded text-[10px] font-bold ${
                 d.intensity === "race"
-                  ? "bg-[#c8ff00] text-[#09090b]"
+                  ? "bg-accent text-background"
                   : d.intensity === "hard"
                     ? "bg-red-500/20 text-red-400"
-                    : "bg-zinc-800 text-zinc-400"
+                    : "bg-border text-muted"
               }`}
             >
               {d.day}
             </span>
-            <span className="hidden sm:block text-zinc-400">{d.type}</span>
+            <span className="hidden sm:block text-muted">{d.type}</span>
             <span
               className={
                 d.intensity === "race"
-                  ? "text-[#c8ff00] font-semibold"
-                  : "text-zinc-200"
+                  ? "text-accent font-semibold"
+                  : "text-foreground/80"
               }
             >
               {d.workout}
             </span>
-            <span className="text-zinc-400">{d.dist}</span>
+            <span className="text-muted">{d.dist}</span>
             <span
-              className={`hidden sm:block ${d.pace === "—" ? "text-zinc-600" : "text-zinc-300"}`}
+              className={`hidden sm:block ${d.pace === "—" ? "text-muted/70" : "text-foreground/70"}`}
             >
               {d.pace !== "—" ? `${d.pace}/km` : "—"}
             </span>
@@ -1207,16 +1207,16 @@ function TrainingPlan() {
                 {intensityLabel(d.intensity)}
               </span>
             </span>
-            <span className="hidden sm:block text-zinc-500 font-sans text-[11px]">
+            <span className="hidden sm:block text-foreground0 font-sans text-[11px]">
               {d.note}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 rounded-lg bg-[#c8ff00]/5 border border-[#c8ff00]/20 p-3">
-        <p className="text-[11px] text-zinc-400 leading-relaxed">
-          <span className="text-[#c8ff00] font-medium">AI 코치 코멘트:</span>{" "}
+      <div className="mt-4 rounded-lg bg-accent/5 border border-accent/20 p-3">
+        <p className="text-[11px] text-muted leading-relaxed">
+          <span className="text-accent font-medium">AI 코치 코멘트:</span>{" "}
           {plan.aiNote}
         </p>
       </div>
@@ -1228,16 +1228,16 @@ function TrainingPlan() {
 export default function PreviewSection() {
   return (
     <section className="relative py-32 overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(200,255,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(200,255,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--accent-rgb),0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-zinc-50">
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">
             당신의 데이터가
             <br />
-            <span className="text-[#c8ff00]">이렇게 바뀝니다</span>
+            <span className="text-accent">이렇게 바뀝니다</span>
           </h2>
-          <p className="mt-4 text-zinc-400">
+          <p className="mt-4 text-muted">
             흩어진 숫자들이 한눈에 읽히는 러닝 리포트로
           </p>
         </div>

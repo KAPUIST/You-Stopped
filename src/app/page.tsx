@@ -33,7 +33,7 @@ function MockDataRow({
       className={`grid grid-cols-6 gap-2 px-3 py-2 text-xs font-mono rounded-lg transition-colors ${
         highlighted
           ? "bg-accent/10 text-accent border border-accent/20"
-          : "text-zinc-400 hover:bg-card-hover"
+          : "text-muted hover:bg-card-hover"
       }`}
     >
       <span>{date}</span>
@@ -80,8 +80,8 @@ export default function Home() {
       {/* Hero */}
       <section className="relative flex min-h-screen items-center overflow-hidden pt-16">
         {/* Background grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(200,255,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(200,255,0,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        <div className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-accent/5 blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--accent-rgb),0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--accent-rgb),0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        <div className="absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-accent/3 blur-[120px]" />
 
         <div className="relative mx-auto max-w-6xl px-6">
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">

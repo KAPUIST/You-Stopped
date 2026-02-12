@@ -50,7 +50,7 @@ function renderContent(content: string) {
     // Regular paragraph - handle bold and line breaks
     const lines = trimmed.split("\n");
     return (
-      <p key={i} className="text-base leading-relaxed text-zinc-300 mb-4">
+      <p key={i} className="text-base leading-relaxed text-foreground/75 mb-4">
         {lines.map((line, j) => {
           const parts = line.split(/(\*\*.*?\*\*)/g);
           return (

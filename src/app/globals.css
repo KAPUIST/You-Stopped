@@ -1,21 +1,73 @@
 @import "tailwindcss";
 
+/* ─── Theme tokens (reference CSS vars for light/dark) ─── */
 @theme inline {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --color-accent: #c8ff00;
-  --color-accent-dim: #a3cc00;
-  --color-muted: #71717a;
-  --color-card: #18181b;
-  --color-card-hover: #27272a;
-  --color-border: #27272a;
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-muted: var(--muted);
+  --color-card: var(--card-bg);
+  --color-card-hover: var(--card-hover-bg);
+  --color-border: var(--border-color);
+  --color-surface: var(--surface-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* ─── Light mode (default) ───────────────────── */
+:root {
+  --bg: #f5f5f4;
+  --fg: #1c1917;
+  --accent: #15803d;
+  --accent-dim: #166534;
+  --muted: #78716c;
+  --card-bg: #fafaf9;
+  --card-hover-bg: #f0efed;
+  --border-color: #d6d3d1;
+  --surface-bg: #eeeceb;
+  /* Inline style용 accent 변형 */
+  --accent-solid: #15803d;
+  --accent-rgb: 21, 128, 61;
+  --accent-bar: rgba(21, 128, 61, 0.22);
+  --accent-bar-subtle: rgba(21, 128, 61, 0.06);
+  --accent-glow: rgba(21, 128, 61, 0.10);
+  --accent-gradient-end: #f5f5f4;
+  --track-border: #15803d;
+  --track-bg: rgba(21, 128, 61, 0.04);
+  --treadmill-border: #0369a1;
+  --treadmill-bg: rgba(3, 105, 161, 0.05);
+  --bar-empty: rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Dark mode ──────────────────────────────── */
+.dark {
+    --bg: #171717;
+    --fg: #ededed;
+    --accent: #c8ff00;
+    --accent-dim: #a3cc00;
+    --muted: #a1a1a7;
+    --card-bg: #222222;
+    --card-hover-bg: #2c2c2c;
+    --border-color: #3e3e44;
+    --surface-bg: #262626;
+    /* Inline style용 accent 변형 */
+    --accent-solid: #c8ff00;
+    --accent-rgb: 200, 255, 0;
+    --accent-bar: rgba(200, 255, 0, 0.25);
+    --accent-bar-subtle: rgba(200, 255, 0, 0.04);
+    --accent-glow: rgba(200, 255, 0, 0.2);
+    --accent-gradient-end: #171717;
+    --track-border: #c8ff00;
+    --track-bg: rgba(200, 255, 0, 0.03);
+    --treadmill-border: #38bdf8;
+    --treadmill-bg: rgba(56, 189, 248, 0.03);
+  --bar-empty: rgba(255, 255, 255, 0.03);
+}
+
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--bg);
+  color: var(--fg);
 }
 
 html {
@@ -28,8 +80,8 @@ html {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(200, 255, 0, 0.15); }
-  50% { box-shadow: 0 0 40px rgba(200, 255, 0, 0.3); }
+  0%, 100% { box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15); }
+  50% { box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.3); }
 }
 
 @keyframes fade-in-up {
@@ -60,3 +112,95 @@ html {
 .delay-300 { animation-delay: 0.3s; }
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
+
+/* ─── Dashboard Animations ────────────────── */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--card-bg) 25%,
+    var(--card-hover-bg) 50%,
+    var(--card-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+
+@keyframes card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-reveal {
+  opacity: 0;
+  animation-name: card-reveal;
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.bar-grow {
+  transform: scaleY(0);
+  transform-origin: bottom;
+  animation-name: bar-grow;
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes number-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.number-reveal {
+  opacity: 0;
+  animation-name: number-reveal;
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+.progress-fill {
+  animation-name: progress-fill;
+  animation-duration: 0.8s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+/* ─── Mobile Utilities ───────────────────── */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
