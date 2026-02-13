@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect, Fragment } from "react";
 import { useDashboard, RunningRecord, Shoe } from "../context";
-import { ArrowUp, ArrowDown, Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
+import { ArrowUp, ArrowDown, Plus, Pencil, Trash2, X, Loader2, Search, BarChart3, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { parsePaceToSeconds, formatPaceColon, kmhToMinKm, paceToKmh } from "../utils";
+import { parsePaceToSeconds, formatPace, formatPaceColon, kmhToMinKm, paceToKmh } from "../utils";
 import { EXERCISE_TYPES, TAG_OPTIONS, getTypeStyle, getTagStyle } from "../constants";
 
 type SortKey = "date" | "exercise_type" | "distance_km" | "duration" | "pace" | "cadence" | "avg_heart_rate";
@@ -56,6 +56,9 @@ export default function RecordsPage() {
   const [showDupsOnly, setShowDupsOnly] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   // ─── Inline notes editing ──────────────────────
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -75,6 +78,22 @@ export default function RecordsPage() {
     const timer = setTimeout(() => setConfirmDeleteId(null), 3000);
     return () => clearTimeout(timer);
   }, [confirmDeleteId]);
+
+  // ─── Ctrl+F / Cmd+F → custom search ────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === "Escape" && searchQuery) {
+        setSearchQuery("");
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [searchQuery]);
 
   const getDisplayNotes = useCallback(
     (r: RunningRecord) => notesOverrides.has(r.id) ? notesOverrides.get(r.id)! : (r.notes ?? ""),
@@ -188,6 +207,7 @@ export default function RecordsPage() {
   }, [records]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return records.filter((r) => {
       const y = parseInt(r.date.substring(0, 4));
       if (y !== selectedYear) return false;
@@ -198,9 +218,24 @@ export default function RecordsPage() {
       if (showDupsOnly && !dupIds.has(r.id)) return false;
       if (typeFilter && r.exercise_type !== typeFilter) return false;
       if (tagFilter && !(r.tags ?? []).includes(tagFilter)) return false;
+      if (q) {
+        const haystack = [
+          r.date,
+          r.exercise_type,
+          r.distance_km?.toString() ?? "",
+          r.pace_minkm ?? "",
+          r.pace_kmh?.toString() ?? "",
+          r.duration ?? "",
+          r.cadence?.toString() ?? "",
+          r.avg_heart_rate?.toString() ?? "",
+          r.notes ?? "",
+          ...(r.tags ?? []),
+        ].join(" ").toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
-  }, [records, selectedYear, selectedMonths, showDupsOnly, dupIds, typeFilter, tagFilter]);
+  }, [records, selectedYear, selectedMonths, showDupsOnly, dupIds, typeFilter, tagFilter, searchQuery]);
 
   const sorted = useMemo(() => {
     const getPaceSeconds = (r: RunningRecord): number => {
@@ -251,6 +286,54 @@ export default function RecordsPage() {
     ? `${Math.floor(avgPaceSec / 60)}'${Math.round(avgPaceSec % 60).toString().padStart(2, "0")}"`
     : "-";
   const avgKmhStr = avgPaceSec ? (3600 / avgPaceSec).toFixed(1) : null;
+
+  // ─── Type Comparison Stats ──────────────────
+  const typeComparison = useMemo(() => {
+    const groups = new Map<string, RunningRecord[]>();
+    for (const r of filtered) {
+      const arr = groups.get(r.exercise_type) ?? [];
+      arr.push(r);
+      groups.set(r.exercise_type, arr);
+    }
+
+    return Array.from(groups.entries()).map(([type, recs]) => {
+      const count = recs.length;
+      const totalDist = recs.reduce((s, r) => s + (r.distance_km ?? 0), 0);
+      const avgDist = count > 0 ? totalDist / count : 0;
+
+      // Pace calculations (seconds per km)
+      const paceSecs = recs
+        .map((r) => {
+          const sec = parsePaceToSeconds(r.pace_minkm);
+          if (sec && sec > 60) return sec;
+          if (r.pace_kmh && r.pace_kmh > 0) return 3600 / r.pace_kmh;
+          return null;
+        })
+        .filter((p): p is number => p !== null && p > 60);
+
+      const avgPace = paceSecs.length > 0
+        ? paceSecs.reduce((a, b) => a + b, 0) / paceSecs.length
+        : null;
+      const bestPace = paceSecs.length > 0 ? Math.min(...paceSecs) : null;
+
+      // Cadence + HR averages
+      const cadences = recs.map((r) => r.cadence).filter((c): c is number => c != null);
+      const hrs = recs.map((r) => r.avg_heart_rate).filter((h): h is number => h != null);
+
+      return {
+        type,
+        count,
+        totalDist: Math.round(totalDist * 10) / 10,
+        avgDist: Math.round(avgDist * 10) / 10,
+        avgPaceStr: avgPace ? formatPace(avgPace) : null,
+        avgKmh: avgPace ? (3600 / avgPace).toFixed(1) : null,
+        bestPaceStr: bestPace ? formatPace(bestPace) : null,
+        bestKmh: bestPace ? (3600 / bestPace).toFixed(1) : null,
+        avgCadence: cadences.length > 0 ? Math.round(cadences.reduce((a, b) => a + b, 0) / cadences.length) : null,
+        avgHr: hrs.length > 0 ? Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length) : null,
+      };
+    }).sort((a, b) => b.count - a.count);
+  }, [filtered]);
 
   if (loading) {
     return (
@@ -400,6 +483,34 @@ export default function RecordsPage() {
         )}
       </div>
 
+      {/* ─── Quick Search ──────────────────────────── */}
+      <div className="flex items-center gap-2 mb-4 md:mb-5">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="검색... (Ctrl+F)"
+            className="w-full pl-9 pr-8 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent/50 transition-colors font-mono"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => { setSearchQuery(""); searchInputRef.current?.focus(); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <span className="text-xs text-muted font-mono shrink-0">
+            {filtered.length}건
+          </span>
+        )}
+      </div>
+
       {/* ─── Summary Strip ─────────────────────────── */}
       <div className="flex items-center gap-4 md:gap-8 mb-4 md:mb-5 px-1 overflow-x-auto scrollbar-hide">
         <div className="shrink-0">
@@ -434,6 +545,94 @@ export default function RecordsPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── Type Comparison Toggle + Cards ─────────── */}
+      {typeComparison.length > 1 && (
+        <div className="mb-4 md:mb-5">
+          <button
+            onClick={() => setShowComparison((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-foreground hover:bg-card-hover border border-border/50 transition-all"
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+            유형별 비교
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showComparison ? "rotate-180" : ""}`} />
+          </button>
+          {showComparison && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+              {typeComparison.map((tc, i) => {
+                const style = getTypeStyle(tc.type);
+                return (
+                  <div
+                    key={tc.type}
+                    className="rounded-lg border border-border bg-card p-4 card-reveal"
+                    style={{ borderLeftColor: style.border, borderLeftWidth: 3, animationDelay: `${i * 40}ms` }}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium border ${style.badge}`}>
+                        {tc.type}
+                      </span>
+                      <span className="text-xs text-muted font-mono">{tc.count}회</span>
+                    </div>
+
+                    {/* Distance */}
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-[10px] text-muted uppercase tracking-wider">거리</span>
+                      <div className="text-right">
+                        <span className="text-sm font-bold font-mono text-foreground">{tc.totalDist}</span>
+                        <span className="text-[11px] text-muted ml-0.5">km</span>
+                        <span className="text-[10px] text-muted ml-1.5">(평균 {tc.avgDist})</span>
+                      </div>
+                    </div>
+
+                    {/* Average Pace */}
+                    {tc.avgPaceStr && (
+                      <div className="flex items-baseline justify-between mb-1.5">
+                        <span className="text-[10px] text-muted uppercase tracking-wider">평균</span>
+                        <div className="text-right font-mono">
+                          <span className="text-sm font-bold text-foreground">{tc.avgPaceStr}</span>
+                          <span className="text-[11px] text-muted ml-0.5">/km</span>
+                          {tc.avgKmh && (
+                            <span className="text-[11px] text-muted ml-1.5">{tc.avgKmh} km/h</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Best Pace */}
+                    {tc.bestPaceStr && (
+                      <div className="flex items-baseline justify-between mb-2">
+                        <span className="text-[10px] text-accent uppercase tracking-wider">최고</span>
+                        <div className="text-right font-mono">
+                          <span className="text-sm font-bold text-accent">{tc.bestPaceStr}</span>
+                          <span className="text-[11px] text-muted ml-0.5">/km</span>
+                          {tc.bestKmh && (
+                            <span className="text-[11px] text-muted ml-1.5">{tc.bestKmh} km/h</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cadence + HR */}
+                    <div className="flex items-center gap-3 pt-2 border-t border-border/50">
+                      {tc.avgCadence && (
+                        <span className="text-[11px] font-mono text-muted">
+                          {tc.avgCadence} <span className="text-[10px]">spm</span>
+                        </span>
+                      )}
+                      {tc.avgHr && (
+                        <span className="text-[11px] font-mono text-muted">
+                          {tc.avgHr} <span className="text-[10px]">bpm</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Active Sort Chips ─────────────────────── */}
       {sorts.length > 1 || sorts[0]?.key !== "date" ? (

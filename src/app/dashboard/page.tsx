@@ -50,39 +50,30 @@ const PERIOD_OPTIONS = [
 
 function OverviewSkeleton() {
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
-      {/* Header */}
+    <div className="p-3 md:p-4 lg:p-6 space-y-2.5 md:space-y-3">
       <div className="flex items-center justify-between">
         <div className="skeleton h-7 w-24" />
         <div className="skeleton h-9 w-56" />
       </div>
-
-      {/* Hero + Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <div className="col-span-2 skeleton h-[132px]" />
-        <div className="skeleton h-[100px] md:h-[132px]" />
-        <div className="skeleton h-[100px] md:h-[132px]" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+        <div className="col-span-2 skeleton h-[100px]" />
+        <div className="skeleton h-[80px] md:h-[100px]" />
+        <div className="skeleton h-[80px] md:h-[100px]" />
       </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="md:col-span-2 skeleton h-[200px] md:h-[234px]" />
-        <div className="skeleton h-[200px] md:h-[234px]" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
+        <div className="md:col-span-2 skeleton h-[150px] md:h-[170px]" />
+        <div className="skeleton h-[150px] md:h-[170px]" />
       </div>
-
-      {/* PR + Total Time Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="md:col-span-2 skeleton h-[200px]" />
-        <div className="skeleton h-[130px] md:h-[200px]" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-3">
+        <div className="skeleton h-[150px]" />
+        <div className="skeleton h-[100px] md:h-[150px]" />
       </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-        <div className="skeleton h-[250px] md:h-[300px]" />
-        <div className="skeleton h-[250px] md:h-[300px]" />
-        <div className="space-y-3 md:space-y-4">
-          <div className="skeleton h-[160px]" />
-          <div className="skeleton h-[128px]" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
+        <div className="skeleton h-[180px]" />
+        <div className="skeleton h-[180px]" />
+        <div className="space-y-2.5">
+          <div className="skeleton h-[120px]" />
+          <div className="skeleton h-[90px]" />
         </div>
       </div>
     </div>
@@ -109,6 +100,9 @@ export default function OverviewPage() {
   const today = now.toISOString().split("T")[0];
   const dayOfMonth = now.getDate();
 
+  // Animation key: changes when period changes → re-triggers number-reveal on dynamic values
+  const ak = `p${periodMonths}`;
+
   const filtered = useMemo(() => {
     if (periodMonths === 0) return records;
     const cutoff = new Date(now.getFullYear(), now.getMonth() - periodMonths, now.getDate());
@@ -116,7 +110,6 @@ export default function OverviewPage() {
     return records.filter((r) => r.date >= cutoffStr);
   }, [records, periodMonths, today]);
 
-  // Previous period for comparison
   const previousFiltered = useMemo(() => {
     if (periodMonths === 0) return [];
     const currentCutoff = new Date(now.getFullYear(), now.getMonth() - periodMonths, now.getDate());
@@ -206,6 +199,7 @@ export default function OverviewPage() {
   const avgHeart = hearts.length > 0
     ? Math.round(hearts.reduce((a, b) => a + b, 0) / hearts.length)
     : null;
+  const maxHeart = hearts.length > 0 ? Math.max(...hearts) : null;
 
   // Previous period stats
   const prevDistance = previousFiltered.reduce((s, r) => s + (r.distance_km ?? 0), 0);
@@ -225,7 +219,6 @@ export default function OverviewPage() {
   // Deltas (%)
   const distDelta = prevDistance > 0 ? ((totalDistance - prevDistance) / prevDistance) * 100 : null;
   const runsDelta = prevRuns > 0 ? ((totalRuns - prevRuns) / prevRuns) * 100 : null;
-  // Pace: lower is better, so reverse the sign
   const paceDelta = avgPaceSec && prevAvgPaceSec
     ? ((prevAvgPaceSec - avgPaceSec) / prevAvgPaceSec) * 100
     : null;
@@ -254,9 +247,10 @@ export default function OverviewPage() {
     ? ((thisMonthDist - lastMonthSameDist) / lastMonthSameDist) * 100
     : null;
 
-  // ─── Weekly data (last 12 weeks) ──────────
+  // ─── Weekly data ────────────────────────────
+  const weekCount = periodMonths === 1 ? 5 : periodMonths === 3 ? 12 : periodMonths === 6 ? 16 : 12;
   const weeks: { month: string; distance: number; runs: number; startDate: string }[] = [];
-  for (let i = 11; i >= 0; i--) {
+  for (let i = weekCount - 1; i >= 0; i--) {
     const weekStart = new Date(now);
     weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1 - i * 7);
     const weekEnd = new Date(weekStart);
@@ -304,7 +298,7 @@ export default function OverviewPage() {
   const typeMax = typeEntries[0]?.[1] ?? 1;
 
   // ─── Recent runs ──────────────────────────
-  const recentRuns = records.slice(0, 5);
+  const recentRuns = filtered.slice(0, 5);
 
   // ─── Day of week ──────────────────────────
   const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0];
@@ -315,12 +309,14 @@ export default function OverviewPage() {
   const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
   const maxDayCount = Math.max(...dayOfWeekCounts, 1);
 
+  const periodLabel = periodMonths === 0 ? "전체" : (PERIOD_OPTIONS.find(o => o.months === periodMonths)?.label ?? `${periodMonths}달`);
+
   // ─── Render ───────────────────────────────
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
+    <div className="p-3 md:p-4 lg:p-6 space-y-2.5 md:space-y-3">
       {/* ═══ Header + Period Selector ════════════ */}
-      <div className="card-reveal flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style={{ animationDelay: "0ms" }}>
+      <div className="card-reveal flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2" style={{ animationDelay: "0ms" }}>
         <h1 className="text-xl font-bold text-foreground tracking-tight">
           오버뷰
         </h1>
@@ -346,63 +342,68 @@ export default function OverviewPage() {
       </div>
 
       {/* ═══ Hero Card + Stat Cards ══════════════ */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        {/* Hero: 총 거리 + 총 러닝 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+        {/* Hero: 총 거리 + 총 러닝 + 총 시간 */}
         <div
-          className="col-span-2 rounded-xl border border-accent/15 p-6 card-reveal relative overflow-hidden"
+          className="col-span-2 rounded-xl border border-accent/15 p-4 card-reveal relative overflow-hidden"
           style={{
             background: "linear-gradient(135deg, var(--accent-bar-subtle) 0%, var(--accent-gradient-end) 70%)",
             animationDelay: "40ms",
           }}
         >
-          {/* Subtle glow */}
-          <div className="absolute -top-16 -left-16 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-
           <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-4">
-              <Route className="h-4 w-4 text-accent" />
-              <span className="text-xs font-medium text-muted">총 거리 · 총 러닝 · 총 시간</span>
+            <div className="flex items-center gap-2 mb-2">
+              <Route className="h-3.5 w-3.5 text-accent" />
+              <span className="text-[11px] font-medium text-muted">총 거리 · 총 러닝 · 총 시간</span>
             </div>
 
-            <div className="flex items-baseline gap-3 md:gap-5">
-              <p className="number-reveal" style={{ animationDelay: "200ms" }}>
-                <span className="text-3xl md:text-4xl font-bold font-mono text-accent leading-none">
+            <div className="flex items-baseline gap-3 md:gap-4">
+              <p key={`dist-${ak}`} className="number-reveal" style={{ animationDelay: "200ms" }}>
+                <span className="text-2xl md:text-3xl font-bold font-mono text-accent leading-none">
                   {Math.round(totalDistance).toLocaleString()}
                 </span>
-                <span className="text-base md:text-lg font-normal text-muted ml-1.5">km</span>
+                <span className="text-sm font-normal text-muted ml-1">km</span>
               </p>
 
-              <div className="h-8 w-px bg-border/50" />
+              <div className="h-6 w-px bg-border/50" />
 
-              <p className="number-reveal" style={{ animationDelay: "280ms" }}>
-                <span className="text-lg md:text-xl font-bold font-mono text-foreground leading-none">
+              <p key={`runs-${ak}`} className="number-reveal" style={{ animationDelay: "280ms" }}>
+                <span className="text-base md:text-lg font-bold font-mono text-foreground leading-none">
                   {totalRuns}
                 </span>
-                <span className="text-sm font-normal text-muted ml-1">회</span>
+                <span className="text-xs font-normal text-muted ml-1">회</span>
               </p>
 
-              <div className="h-8 w-px bg-border/50" />
+              <div className="h-6 w-px bg-border/50" />
 
-              <p className="number-reveal" style={{ animationDelay: "320ms" }}>
-                <span className="text-lg md:text-xl font-bold font-mono text-foreground leading-none">
+              <p key={`time-${ak}`} className="number-reveal" style={{ animationDelay: "320ms" }}>
+                <span className="text-base md:text-lg font-bold font-mono text-foreground leading-none">
                   {Math.floor(totalTimeSec / 3600)}:{Math.floor((totalTimeSec % 3600) / 60).toString().padStart(2, "0")}
                 </span>
-                <span className="text-sm font-normal text-muted ml-1">시간</span>
+                <span className="text-xs font-normal text-muted ml-1">시간</span>
               </p>
             </div>
 
             {/* 전기간 비교 */}
             {prevDistance > 0 && (
-              <div className="mt-4 pt-3 border-t border-accent/10 flex items-center gap-3 md:gap-4 text-[10px] md:text-[11px] font-mono number-reveal overflow-x-auto scrollbar-hide" style={{ animationDelay: "350ms" }}>
-                <span className="text-muted">vs {periodMonths === 1 ? "지난달" : periodMonths === 12 ? "전년" : `이전 ${PERIOD_OPTIONS.find(o => o.months === periodMonths)?.label ?? periodMonths + "달"}`}</span>
-                <span className={distDelta != null && distDelta >= 0 ? "text-accent" : "text-red-400"}>
-                  {distDelta != null && distDelta > 0 ? "+" : ""}{Math.round(totalDistance - prevDistance)}km
-                  <span className="text-muted ml-0.5">({distDelta != null && distDelta > 0 ? "+" : ""}{Math.round(distDelta ?? 0)}%)</span>
-                </span>
-                <span className={runsDelta != null && runsDelta >= 0 ? "text-accent" : "text-red-400"}>
-                  {runsDelta != null && runsDelta > 0 ? "+" : ""}{totalRuns - prevRuns}회
-                  <span className="text-muted ml-0.5">({runsDelta != null && runsDelta > 0 ? "+" : ""}{Math.round(runsDelta ?? 0)}%)</span>
-                </span>
+              <div key={`cmp-${ak}`} className="mt-2.5 pt-2 border-t border-accent/10 flex items-center gap-3 md:gap-4 text-[10px] md:text-[11px] font-mono number-reveal overflow-x-auto scrollbar-hide" style={{ animationDelay: "350ms" }}>
+                <span className="text-muted">vs {periodMonths === 1 ? "지난달" : periodMonths === 12 ? "전년" : `이전 ${periodLabel}`}</span>
+                {Math.round(totalDistance - prevDistance) === 0 && Math.round(distDelta ?? 0) === 0 ? (
+                  <span className="text-muted">거리 동일</span>
+                ) : (
+                  <span className={distDelta != null && distDelta > 0 ? "text-accent" : distDelta != null && distDelta < 0 ? "text-red-400" : "text-muted"}>
+                    {distDelta != null && distDelta > 0 ? "+" : ""}{Math.round(totalDistance - prevDistance)}km
+                    <span className="text-muted ml-0.5">({distDelta != null && distDelta > 0 ? "+" : ""}{Math.round(distDelta ?? 0)}%)</span>
+                  </span>
+                )}
+                {totalRuns - prevRuns === 0 && Math.round(runsDelta ?? 0) === 0 ? (
+                  <span className="text-muted">횟수 동일</span>
+                ) : (
+                  <span className={runsDelta != null && runsDelta > 0 ? "text-accent" : runsDelta != null && runsDelta < 0 ? "text-red-400" : "text-muted"}>
+                    {runsDelta != null && runsDelta > 0 ? "+" : ""}{totalRuns - prevRuns}회
+                    <span className="text-muted ml-0.5">({runsDelta != null && runsDelta > 0 ? "+" : ""}{Math.round(runsDelta ?? 0)}%)</span>
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -410,73 +411,85 @@ export default function OverviewPage() {
 
         {/* 평균 페이스 */}
         <div
-          className="rounded-xl border border-border bg-card p-5 card-reveal"
+          className="rounded-xl border border-border bg-card p-3.5 card-reveal"
           style={{ animationDelay: "80ms" }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Timer className="h-3.5 w-3.5 text-muted" />
-            <span className="text-xs font-medium text-muted">평균 페이스</span>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Timer className="h-3 w-3 text-muted" />
+            <span className="text-[11px] font-medium text-muted">평균 페이스</span>
           </div>
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 number-reveal" style={{ animationDelay: "320ms" }}>
+          <div key={`pace-${ak}`} className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 number-reveal" style={{ animationDelay: "320ms" }}>
             <p>
-              <span className="text-2xl font-bold font-mono text-foreground leading-none">
+              <span className="text-xl font-bold font-mono text-foreground leading-none">
                 {avgPace}
               </span>
-              <span className="text-sm font-normal text-muted ml-1">/km</span>
+              <span className="text-xs font-normal text-muted ml-0.5">/km</span>
             </p>
             {avgKmh && (
               <p>
-                <span className="text-lg font-bold font-mono text-muted leading-none">
+                <span className="text-base font-bold font-mono text-muted leading-none">
                   {avgKmh}
                 </span>
-                <span className="text-xs font-normal text-muted/60 ml-0.5">km/h</span>
+                <span className="text-[10px] font-normal text-muted ml-0.5">km/h</span>
               </p>
             )}
           </div>
           {paceDelta != null && (
-            <div className="mt-2.5">
-              <DeltaBadge delta={paceDelta} label={paceDelta >= 0 ? "개선" : "하락"} />
+            <div className="mt-1.5">
+              <DeltaBadge delta={paceDelta} label={paceDelta >= 0 ? "개선" : "하락"} size="sm" />
             </div>
           )}
         </div>
 
-        {/* 평균 심박 */}
+        {/* 심박 */}
         <div
-          className="rounded-xl border border-border bg-card p-5 card-reveal"
+          className="rounded-xl border border-border bg-card p-3.5 card-reveal"
           style={{ animationDelay: "120ms" }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Heart className="h-3.5 w-3.5 text-red-400/80" />
-            <span className="text-xs font-medium text-muted">평균 심박</span>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Heart className="h-3 w-3 text-red-400/80" />
+            <span className="text-[11px] font-medium text-muted">심박</span>
           </div>
-          <p className="number-reveal" style={{ animationDelay: "360ms" }}>
-            <span className="text-2xl font-bold font-mono text-foreground leading-none">
-              {avgHeart?.toString() ?? "-"}
-            </span>
-            <span className="text-sm font-normal text-muted ml-1">bpm</span>
-          </p>
+          <div key={`hr-${ak}`} className="space-y-1.5">
+            <div className="flex items-baseline gap-1.5 number-reveal" style={{ animationDelay: "360ms" }}>
+              <span className="text-[10px] text-muted w-6">평균</span>
+              <span className="text-xl font-bold font-mono text-foreground leading-none">
+                {avgHeart?.toString() ?? "-"}
+              </span>
+              <span className="text-[10px] font-normal text-muted">bpm</span>
+            </div>
+            {maxHeart && (
+              <div className="flex items-baseline gap-1.5 number-reveal" style={{ animationDelay: "400ms" }}>
+                <span className="text-[10px] text-muted w-6">최고</span>
+                <span className="text-base font-bold font-mono text-red-400 leading-none">
+                  {maxHeart}
+                </span>
+                <span className="text-[10px] font-normal text-muted">bpm</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ═══ Charts Row ══════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
         {/* Weekly Distance Chart */}
         <div
-          className="md:col-span-2 rounded-xl border border-border bg-card p-4 md:p-5 card-reveal"
+          className="md:col-span-2 rounded-xl border border-border bg-card p-3 md:p-4 card-reveal"
           style={{ animationDelay: "160ms" }}
         >
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-foreground">주간 거리</h3>
-            <span className="text-xs font-mono text-muted">최근 12주</span>
+            <span className="text-xs font-mono text-muted">최근 {weekCount}주</span>
           </div>
           {(() => {
-            const chartH = 150;
-            const barArea = chartH - 20;
+            const chartH = 110;
+            const barArea = chartH - 18;
             const niceMax = Math.ceil(maxWeekDist / 10) * 10 || 10;
             const gridLines = [0, Math.round(niceMax / 2), niceMax];
 
             return (
-              <div className="flex" style={{ height: chartH }}>
+              <div key={`wk-${ak}`} className="flex" style={{ height: chartH }}>
                 {/* Y-axis */}
                 <div className="flex flex-col justify-between pr-3 pb-5 shrink-0" style={{ height: barArea }}>
                   {[...gridLines].reverse().map((v) => (
@@ -518,7 +531,6 @@ export default function OverviewPage() {
                               boxShadow: isLatest ? "0 0 12px var(--accent-glow)" : "none",
                             }}
                           />
-                          {/* Tooltip */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
                             <div className="bg-foreground text-background text-xs font-mono px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
                               {w.startDate} · {w.distance}km · {w.runs}회
@@ -539,42 +551,48 @@ export default function OverviewPage() {
 
         {/* This Month Card */}
         <div
-          className="rounded-xl border border-border bg-card p-4 md:p-5 flex flex-col card-reveal"
+          className="rounded-xl border border-border bg-card p-3.5 flex flex-col card-reveal"
           style={{ animationDelay: "200ms" }}
         >
-          <h3 className="text-sm font-bold text-foreground mb-4">이번 달</h3>
+          <h3 className="text-sm font-bold text-foreground mb-2.5">이번 달</h3>
 
           <div className="flex-1 flex flex-col justify-center">
             <p className="number-reveal" style={{ animationDelay: "400ms" }}>
-              <span className="text-3xl font-bold text-accent font-mono leading-none">
+              <span className="text-2xl font-bold text-accent font-mono leading-none">
                 {Math.round(thisMonthDist * 10) / 10}
               </span>
-              <span className="text-sm font-normal text-muted ml-1">km</span>
+              <span className="text-xs font-normal text-muted ml-1">km</span>
             </p>
-            <p className="text-sm text-muted mt-1.5 font-mono">
+            <p className="text-xs text-muted mt-1 font-mono">
               {thisMonthRecords.length}회 러닝
             </p>
             {monthDistDelta !== null && (
-              <div className={`flex items-center gap-1.5 mt-3 text-sm font-mono ${monthDistDelta >= 0 ? "text-accent" : "text-red-400"}`}>
-                {monthDistDelta > 0 ? (
-                  <TrendingUp className="h-3.5 w-3.5" />
-                ) : monthDistDelta < 0 ? (
-                  <TrendingDown className="h-3.5 w-3.5" />
-                ) : (
+              <div className={`flex items-center gap-1 mt-2 text-xs font-mono ${
+                Math.round(monthDistDelta) === 0
+                  ? "text-muted"
+                  : monthDistDelta > 0
+                  ? "text-accent"
+                  : "text-red-400"
+              }`}>
+                {Math.round(monthDistDelta) === 0 ? (
                   <Minus className="h-3.5 w-3.5" />
+                ) : monthDistDelta > 0 ? (
+                  <TrendingUp className="h-3.5 w-3.5" />
+                ) : (
+                  <TrendingDown className="h-3.5 w-3.5" />
                 )}
                 <span>
-                  {monthDistDelta > 0 ? "+" : ""}
-                  {Math.round(monthDistDelta)}% vs 지난달 동기간
+                  {Math.round(monthDistDelta) === 0
+                    ? "지난달 동기간과 동일"
+                    : `${monthDistDelta > 0 ? "+" : ""}${Math.round(monthDistDelta)}% vs 지난달 동기간`}
                 </span>
               </div>
             )}
           </div>
 
-          {/* Progress vs last month */}
           {lastMonthFullDist > 0 && (
-            <div className="mt-4 pt-3 border-t border-border/50">
-              <div className="flex justify-between text-[11px] text-muted mb-2">
+            <div className="mt-2.5 pt-2 border-t border-border/50">
+              <div className="flex justify-between text-[10px] text-muted mb-1.5">
                 <span>지난달 대비 진행률</span>
                 <span className="font-mono">{Math.round((thisMonthDist / lastMonthFullDist) * 100)}%</span>
               </div>
@@ -587,7 +605,7 @@ export default function OverviewPage() {
                   }}
                 />
               </div>
-              <div className="flex justify-between text-[11px] font-mono text-muted mt-2">
+              <div className="flex justify-between text-[10px] font-mono text-muted mt-1.5">
                 <span>1~{dayOfMonth}일: {Math.round(lastMonthSameDist * 10) / 10}km</span>
                 <span>전체: {Math.round(lastMonthFullDist * 10) / 10}km</span>
               </div>
@@ -597,28 +615,28 @@ export default function OverviewPage() {
       </div>
 
       {/* ═══ PR Row ══════════════════════════════ */}
-      <div className={`grid grid-cols-1 ${shoeData.length > 0 ? "md:grid-cols-2" : ""} gap-3 md:gap-4`}>
+      <div className={`grid grid-cols-1 ${shoeData.length > 0 ? "md:grid-cols-2" : ""} gap-2.5 md:gap-3`}>
         {/* PR Card */}
         <div
-          className="rounded-xl border border-border bg-card p-5 card-reveal"
+          className="rounded-xl border border-border bg-card p-4 card-reveal"
           style={{ animationDelay: "200ms" }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="h-4 w-4 text-accent" />
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-3.5 w-3.5 text-accent" />
             <h3 className="text-sm font-bold text-foreground">개인 기록 (PR)</h3>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {personalRecords.map((pr) => (
               <div
                 key={pr.label}
-                className={`rounded-lg border p-3 text-center ${
+                className={`rounded-lg border p-2 text-center ${
                   pr.best
                     ? "border-accent/15 bg-accent/5"
                     : "border-dashed border-border/50"
                 }`}
               >
-                <div className="text-[11px] text-muted mb-1.5">{pr.label}</div>
+                <div className="text-[10px] text-muted mb-1">{pr.label}</div>
                 <div
                   className={`text-sm font-mono font-bold ${
                     pr.best ? "text-foreground" : "text-muted"
@@ -641,12 +659,12 @@ export default function OverviewPage() {
         {/* Shoe Mileage Card */}
         {shoeData.length > 0 && (
           <div
-            className="rounded-xl border border-border bg-card p-5 card-reveal"
+            className="rounded-xl border border-border bg-card p-4 card-reveal"
             style={{ animationDelay: "220ms" }}
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Footprints className="h-4 w-4 text-accent" />
+                <Footprints className="h-3.5 w-3.5 text-accent" />
                 <h3 className="text-sm font-bold text-foreground">신발 마일리지</h3>
               </div>
               <Link
@@ -656,7 +674,7 @@ export default function OverviewPage() {
                 관리 →
               </Link>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {shoeData.map(({ shoe, total, pct, isWarning }) => (
                 <div key={shoe.id}>
                   <div className="flex items-center justify-between mb-1">
@@ -686,14 +704,14 @@ export default function OverviewPage() {
       </div>
 
       {/* ═══ Bottom Row ══════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
         {/* Monthly Trend */}
         <div
-          className="rounded-xl border border-border bg-card p-5 card-reveal"
+          className="rounded-xl border border-border bg-card p-4 card-reveal"
           style={{ animationDelay: "240ms" }}
         >
-          <h3 className="text-sm font-bold text-foreground mb-4">월별 추이</h3>
-          <div className="space-y-2.5">
+          <h3 className="text-sm font-bold text-foreground mb-3">월별 추이</h3>
+          <div key={`mo-${ak}`} className="space-y-2">
             {months.map((m, i) => (
               <div key={m.key} className="flex items-center gap-3">
                 <span className="text-xs font-mono text-muted w-8 text-right shrink-0">
@@ -728,21 +746,25 @@ export default function OverviewPage() {
 
         {/* Recent Runs */}
         <div
-          className="rounded-xl border border-border bg-card p-5 card-reveal"
+          className="rounded-xl border border-border bg-card p-4 card-reveal"
           style={{ animationDelay: "280ms" }}
         >
-          <h3 className="text-sm font-bold text-foreground mb-3">최근 기록</h3>
-          <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-foreground">최근 기록</h3>
+            <span className="text-xs font-mono text-muted">
+              {periodMonths === 0 ? "전체" : `최근 ${periodLabel}`}
+            </span>
+          </div>
+          <div key={`rec-${ak}`}>
             {recentRuns.map((r, i) => {
               const typeColor = getTypeStyle(r.exercise_type).bar;
 
               return (
                 <div
                   key={r.id}
-                  className="flex items-center gap-3 py-2.5 border-b border-border/30 last:border-0 card-reveal"
+                  className="flex items-center gap-2.5 py-2 border-b border-border/30 last:border-0 card-reveal"
                   style={{ animationDelay: `${500 + i * 60}ms` }}
                 >
-                  {/* Type color indicator */}
                   <div
                     className="w-1 h-8 rounded-full shrink-0"
                     style={{ backgroundColor: typeColor }}
@@ -783,14 +805,14 @@ export default function OverviewPage() {
         </div>
 
         {/* Right column: Types + Days */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2.5">
           {/* Exercise Types */}
           <div
-            className="rounded-xl border border-border bg-card p-5 flex-1 card-reveal"
+            className="rounded-xl border border-border bg-card p-4 flex-1 card-reveal"
             style={{ animationDelay: "320ms" }}
           >
-            <h3 className="text-sm font-bold text-foreground mb-3">운동 유형</h3>
-            <div className="space-y-3">
+            <h3 className="text-sm font-bold text-foreground mb-2.5">운동 유형</h3>
+            <div key={`ty-${ak}`} className="space-y-2.5">
               {typeEntries.map(([type, count]) => {
                 const color = getTypeStyle(type).bar;
                 return (
@@ -821,18 +843,17 @@ export default function OverviewPage() {
 
           {/* Day of Week */}
           <div
-            className="rounded-xl border border-border bg-card p-5 card-reveal"
+            className="rounded-xl border border-border bg-card p-4 card-reveal"
             style={{ animationDelay: "360ms" }}
           >
-            <h3 className="text-sm font-bold text-foreground mb-3">요일별 빈도</h3>
-            <div className="flex items-end gap-2 h-[80px]">
+            <h3 className="text-sm font-bold text-foreground mb-2.5">요일별 빈도</h3>
+            <div key={`dw-${ak}`} className="flex items-end gap-2 h-[80px]">
               {dayOfWeekCounts.map((count, i) => {
                 const isMax = count === Math.max(...dayOfWeekCounts);
                 const barH = Math.max((count / maxDayCount) * 65, 2);
 
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group relative">
-                    {/* Count tooltip */}
                     <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                       <span className="text-[11px] font-mono text-accent">{count}</span>
                     </div>
@@ -875,17 +896,28 @@ function DeltaBadge({
   size?: "sm" | "default";
 }) {
   if (delta == null) return null;
-  const isPositive = delta >= 0;
-  const colorClass = isPositive ? "text-accent" : "text-red-400";
 
-  const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
-  const text = `${delta > 0 ? "+" : ""}${Math.round(delta)}%${label ? ` ${label}` : ""}`;
+  const rounded = Math.round(delta);
+  const iconSize = size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3";
+  const textSize = size === "sm" ? "text-[11px]" : "text-xs";
+
+  if (rounded === 0) {
+    return (
+      <span className={`ml-auto inline-flex items-center gap-0.5 font-mono text-muted ${textSize}`}>
+        <Minus className={iconSize} />
+        동일
+      </span>
+    );
+  }
+
+  const isPositive = delta > 0;
+  const colorClass = isPositive ? "text-accent" : "text-red-400";
+  const Icon = isPositive ? TrendingUp : TrendingDown;
+  const text = `${isPositive ? "+" : ""}${rounded}%${label ? ` ${label}` : ""}`;
 
   return (
-    <span className={`ml-auto inline-flex items-center gap-0.5 font-mono ${colorClass} ${
-      size === "sm" ? "text-[11px]" : "text-xs"
-    }`}>
-      <Icon className={size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+    <span className={`ml-auto inline-flex items-center gap-0.5 font-mono ${colorClass} ${textSize}`}>
+      <Icon className={iconSize} />
       {text}
     </span>
   );
