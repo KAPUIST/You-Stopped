@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { DashboardContext, type RunningRecord, type Shoe } from "./context";
@@ -19,10 +19,19 @@ import {
   Monitor,
   Check,
   User,
-  RefreshCw,
-  CheckCircle2,
-  ExternalLink,
+  X,
+  AlertCircle,
 } from "lucide-react";
+import { StravaIcon } from "@/components/icons/StravaIcon";
+
+interface ImportProgress {
+  pending: number;
+  processing: number;
+  done: number;
+  error: number;
+  cancelled: number;
+  total: number;
+}
 
 const STRAVA_BRAND = "#FC4C02";
 
@@ -51,15 +60,16 @@ export default function DashboardLayout({
   const [shoes, setShoes] = useState<Shoe[]>([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [authed, setAuthed] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [stravaConnected, setStravaConnected] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -88,6 +98,7 @@ export default function DashboardLayout({
 
       setAuthed(true);
       setUserName(session.user.email ?? "");
+      setUserAvatar(session.user.user_metadata?.avatar_url ?? session.user.user_metadata?.picture ?? null);
       setUserId(session.user.id);
 
       // Strava 연결 상태 확인
@@ -98,11 +109,23 @@ export default function DashboardLayout({
         .maybeSingle();
       if (stravaConn) setStravaConnected(true);
 
+      // 진행 중인 임포트 작업이 있으면 폴링 시작
+      try {
+        const statusRes = await fetch(`/api/strava/import-status?user_id=${session.user.id}`);
+        const statusData: ImportProgress = await statusRes.json();
+        if (statusData.pending + statusData.processing > 0) {
+          setImportProgress(statusData);
+          startPolling(session.user.id);
+        }
+      } catch {
+        // 무시
+      }
+
       const [recordsRes, shoesRes] = await Promise.all([
         supabase
           .from("running_records")
           .select(
-            "id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags"
+            "id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags, source"
           )
           .order("date", { ascending: false }),
         supabase
@@ -150,54 +173,95 @@ export default function DashboardLayout({
     window.location.href = `https://www.strava.com/oauth/authorize?${params}`;
   };
 
-  const handleStravaSync = async () => {
-    if (!userId || syncing) return;
-    setSyncing(true);
-    setSyncResult(null);
+  const refreshRecords = useCallback(async () => {
+    const { data: newRecords } = await supabase
+      .from("running_records")
+      .select("id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags, source")
+      .order("date", { ascending: false });
+    if (newRecords) setRecords(newRecords);
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  const startPolling = useCallback((uid: string) => {
+    stopPolling();
+    let lastDone = 0;
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/strava/import-status?user_id=${uid}`);
+        const data: ImportProgress = await res.json();
+        setImportProgress(data);
+
+        const active = data.pending + data.processing;
+        if (active === 0) {
+          // 모든 작업 완료
+          stopPolling();
+          if (data.done > lastDone) {
+            refreshRecords();
+          }
+          // 3초 후 진행 바 숨기기
+          setTimeout(() => setImportProgress(null), 3000);
+        }
+        lastDone = data.done;
+      } catch {
+        // 폴링 에러는 무시
+      }
+    }, 2000);
+  }, [stopPolling, refreshRecords]);
+
+  // 컴포넌트 언마운트 시 폴링 정리
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
+  // 초기 연동 시에만 호출 (수동 버튼 없음)
+  const handleInitialImport = useCallback(async (uid: string) => {
     try {
       const res = await fetch("/api/strava/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: uid }),
       });
       const data = await res.json();
       if (res.status === 401 && data.error === "token_expired") {
-        // refresh token 무효화 → 재연결 필요
         setStravaConnected(false);
-        setSyncResult("재연결 필요");
         return;
       }
-      if (data.newly_imported > 0) {
-        setSyncResult(`${data.newly_imported}건 새로 동기화`);
-        // 데이터 새로고침
-        const { data: newRecords } = await supabase
-          .from("running_records")
-          .select("id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags")
-          .order("date", { ascending: false });
-        if (newRecords) setRecords(newRecords);
-      } else {
-        setSyncResult("이미 최신 상태");
+      if (data.total_queued > 0 || data.already_queued > 0) {
+        startPolling(uid);
       }
     } catch {
-      setSyncResult("동기화 실패");
-    } finally {
-      setSyncing(false);
-      setTimeout(() => setSyncResult(null), 3000);
+      // 초기 임포트 실패는 무시 — 웹훅이 이후 처리
+    }
+  }, [startPolling]);
+
+  const handleImportCancel = async () => {
+    if (!userId) return;
+    try {
+      await fetch("/api/strava/import-cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+    } catch {
+      // 무시
     }
   };
 
-  // ?strava_connected=true 처리
+  // ?strava_connected=true 처리 — 첫 연동 시 자동 임포트
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("strava_connected") === "true") {
+    if (params.get("strava_connected") === "true" && userId) {
       setStravaConnected(true);
-      // URL 정리
       window.history.replaceState({}, "", pathname);
-      // 자동 동기화 시작
-      setTimeout(() => handleStravaSync(), 500);
+      handleInitialImport(userId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, pathname, handleInitialImport]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -218,12 +282,12 @@ export default function DashboardLayout({
         {/* ═══ Desktop Sidebar ═══════════════════════ */}
         <aside className="hidden md:flex fixed top-0 left-0 h-screen w-[220px] border-r border-border/60 bg-background flex-col z-50">
           {/* Brand — h-12 matches top bar */}
-          <div className="h-12 px-5 border-b border-border/40 flex items-center">
+          <button onClick={() => router.push("/dashboard")} className="h-12 px-5 border-b border-border/40 flex items-center w-full hover:bg-card-hover/50 transition-colors cursor-pointer active:scale-[0.98]">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
                 <Zap className="h-3.5 w-3.5 text-accent" />
               </div>
-              <div>
+              <div className="text-left">
                 <p className="text-sm font-bold text-foreground tracking-tight leading-none">
                   youStopped
                 </p>
@@ -232,7 +296,7 @@ export default function DashboardLayout({
                 </p>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Navigation */}
           <nav className="flex-1 px-3 py-4 space-y-1">
@@ -313,34 +377,49 @@ export default function DashboardLayout({
           {/* ═══ Top Bar ═══════════════════════════════ */}
           <div className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-6 lg:px-8 h-12 border-b border-border/40 bg-background/95 backdrop-blur-md">
             {/* Mobile Brand */}
-            <div className="flex items-center gap-2 md:hidden">
+            <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 md:hidden cursor-pointer active:scale-[0.97]">
               <div className="h-7 w-7 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
                 <Zap className="h-3.5 w-3.5 text-accent" />
               </div>
               <span className="text-sm font-bold text-foreground tracking-tight">youStopped</span>
-            </div>
+            </button>
             <div className="hidden md:block" />
 
             {/* User Avatar Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen((v) => !v)}
-                className="h-8 w-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center hover:bg-accent/20 transition-colors"
+                className="h-8 w-8 rounded-full overflow-hidden border border-accent/20 flex items-center justify-center hover:opacity-80 transition-opacity"
               >
-                <User className="h-4 w-4 text-accent" />
+                {userAvatar ? (
+                  <img src={userAvatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="h-full w-full bg-accent/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-accent" />
+                  </div>
+                )}
               </button>
 
               {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 z-[60] rounded-lg border border-border bg-card shadow-lg overflow-hidden">
                   {/* User Info */}
-                  <div className="px-4 py-3 border-b border-border/50">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {userName.split("@")[0]}
-                    </p>
-                    <p className="text-xs text-muted truncate font-mono mt-0.5">
-                      {userName}
-                    </p>
+                  <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
+                    {userAvatar ? (
+                      <img src={userAvatar} alt="" className="h-9 w-9 rounded-full shrink-0 object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                        <User className="h-4 w-4 text-accent" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {userName.split("@")[0]}
+                      </p>
+                      <p className="text-xs text-muted truncate font-mono mt-0.5">
+                        {userName}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Theme */}
@@ -371,28 +450,17 @@ export default function DashboardLayout({
                   <div className="px-2 py-2 border-b border-border/50">
                     <p className="px-2 py-1 text-xs text-muted">연동</p>
                     {stravaConnected ? (
-                      <>
-                        <div className="flex items-center gap-3 px-2 py-1.5 text-sm">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: STRAVA_BRAND }} />
-                          <span className="text-foreground font-medium">Strava 연결됨</span>
-                        </div>
-                        <button
-                          onClick={() => { handleStravaSync(); setDropdownOpen(false); }}
-                          disabled={syncing}
-                          className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md text-sm hover:bg-card-hover transition-colors text-muted"
-                        >
-                          <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${syncing ? "animate-spin" : ""}`} />
-                          <span>{syncing ? "동기화 중..." : syncResult || "지금 동기화"}</span>
-                        </button>
-                      </>
+                      <div className="flex items-center gap-3 px-2 py-1.5 text-sm">
+                        <StravaIcon size={14} className="shrink-0" style={{ color: STRAVA_BRAND }} />
+                        <span className="text-foreground font-medium">Strava 연결됨</span>
+                        <span className="ml-auto text-[10px] text-muted font-mono">자동 동기화</span>
+                      </div>
                     ) : (
-                      <button
-                        onClick={() => { handleStravaConnect(); setDropdownOpen(false); }}
-                        className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md text-sm hover:bg-card-hover transition-colors text-muted"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0" style={{ color: STRAVA_BRAND }} />
+                      <div className="flex items-center gap-3 px-2 py-1.5 text-sm text-muted/50 cursor-not-allowed">
+                        <StravaIcon size={14} className="shrink-0 opacity-40" />
                         <span>Strava 연결하기</span>
-                      </button>
+                        <span className="ml-auto text-[9px] font-mono bg-surface px-1.5 py-0.5 rounded text-muted/50">준비중</span>
+                      </div>
                     )}
                   </div>
 
@@ -410,6 +478,54 @@ export default function DashboardLayout({
               )}
             </div>
           </div>
+
+          {/* ═══ Import Progress Bar ═══════════════ */}
+          {importProgress && importProgress.total > 0 && (
+            <div className="sticky top-12 z-30 border-b border-border/40 bg-card/95 backdrop-blur-md px-4 md:px-6 lg:px-8 py-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-muted font-medium">
+                      {importProgress.pending + importProgress.processing > 0
+                        ? "Strava 데이터 가져오는 중..."
+                        : importProgress.error > 0
+                          ? "가져오기 완료 (일부 오류)"
+                          : "가져오기 완료"}
+                    </span>
+                    <span className="text-xs text-muted font-mono">
+                      {importProgress.done + importProgress.error}/{importProgress.total - importProgress.cancelled}
+                      {importProgress.error > 0 && (
+                        <span className="text-red-400 ml-1">
+                          <AlertCircle className="inline h-3 w-3 -mt-0.5" /> {importProgress.error}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-surface rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-accent rounded-full transition-all duration-500 progress-fill"
+                      style={{
+                        width: `${
+                          importProgress.total - importProgress.cancelled > 0
+                            ? ((importProgress.done + importProgress.error) / (importProgress.total - importProgress.cancelled)) * 100
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                {importProgress.pending > 0 && (
+                  <button
+                    onClick={handleImportCancel}
+                    className="text-muted hover:text-red-400 transition-colors shrink-0"
+                    title="취소"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {children}
         </main>

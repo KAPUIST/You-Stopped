@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { getActivities, StravaActivity } from "@/lib/strava";
-import { getValidAccessToken, importSingleActivity } from "@/lib/strava-sync";
+import { getValidAccessToken } from "@/lib/strava-sync";
 
-export const maxDuration = 60; // Vercel function timeout 60초
+const MAX_IMPORT_PER_USER = 20; // 유저당 1회 임포트 최대 건수
+
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. 활동 목록 전체 가져오기 (페이지네이션)
+    // 3. 활동 목록 전체 가져오기 (페이지네이션) — 목록 조회만 API 사용
     const allActivities: StravaActivity[] = [];
     let page = 1;
     while (true) {
@@ -45,12 +47,12 @@ export async function POST(req: NextRequest) {
       page++;
     }
 
-    // Run 타입만 필터 (Ride, Swim 등 제외)
+    // Run 타입만 필터
     const runActivities = allActivities.filter(
       (a) => a.type === "Run" || a.sport_type === "Run" || a.sport_type === "TrailRun"
     );
 
-    // 4. 이미 임포트된 기록 확인 (중복 방지)
+    // 4. 이미 임포트된 기록 제외
     const { data: existing } = await supabase
       .from("running_records")
       .select("source_id")
@@ -58,25 +60,53 @@ export async function POST(req: NextRequest) {
       .eq("source", "strava");
 
     const existingIds = new Set((existing || []).map((r) => r.source_id));
-    const newActivities = runActivities.filter(
-      (a) => !existingIds.has(String(a.id))
+
+    // 5. 이미 큐에 있는 것 제외
+    const { data: existingJobs } = await supabase
+      .from("import_jobs")
+      .select("strava_activity_id")
+      .eq("user_id", user_id)
+      .in("status", ["pending", "processing"]);
+
+    const queuedIds = new Set(
+      (existingJobs || []).map((j) => String(j.strava_activity_id))
     );
 
-    // 5. 새 활동을 상세 조회 → DB에 저장
-    let imported = 0;
-    let errors = 0;
+    const allNew = runActivities.filter(
+      (a) => !existingIds.has(String(a.id)) && !queuedIds.has(String(a.id))
+    );
 
-    for (const activity of newActivities) {
-      const result = await importSingleActivity(accessToken, activity.id, user_id, supabase);
-      if (result === "imported") imported++;
-      else if (result === "error") errors++;
+    // 6. 최대 건수 제한 (최신 활동 우선)
+    const newActivities = allNew.slice(0, MAX_IMPORT_PER_USER);
+    const skipped = allNew.length - newActivities.length;
+
+    // 7. import_jobs에 bulk insert (status: 'pending')
+    if (newActivities.length > 0) {
+      const jobs = newActivities.map((a) => ({
+        user_id,
+        strava_activity_id: a.id,
+        status: "pending",
+      }));
+
+      const { error: insertErr } = await supabase
+        .from("import_jobs")
+        .upsert(jobs, { onConflict: "user_id,strava_activity_id", ignoreDuplicates: true });
+
+      if (insertErr) {
+        console.error("Failed to queue jobs:", insertErr);
+        return NextResponse.json(
+          { error: "Queue failed", detail: insertErr.message },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({
-      total: runActivities.length,
+      total_activities: runActivities.length,
       already_imported: existingIds.size,
-      newly_imported: imported,
-      errors,
+      already_queued: queuedIds.size,
+      total_queued: newActivities.length,
+      skipped_over_limit: skipped,
     });
   } catch (err) {
     console.error("Import error:", err);

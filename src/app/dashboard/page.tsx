@@ -13,6 +13,7 @@ import {
   Footprints,
   AlertTriangle,
 } from "lucide-react";
+import { StravaIcon } from "@/components/icons/StravaIcon";
 
 import {
   parsePaceToSeconds,
@@ -770,12 +771,13 @@ export default function OverviewPage() {
                     style={{ backgroundColor: typeColor }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground font-medium">
+                    <p className="text-sm text-foreground font-medium flex items-center gap-1">
                       {new Date(r.date + "T00:00:00").toLocaleDateString("ko-KR", {
                         month: "short",
                         day: "numeric",
                         weekday: "short",
                       })}
+                      {r.source === "strava" && <span className="inline-flex items-center justify-center w-[14px] h-[14px] rounded bg-[#FC4C02]/15"><StravaIcon size={9} className="text-[#FC4C02]" /></span>}
                     </p>
                     <div className="flex items-center gap-2.5 mt-0.5">
                       <span className="text-xs text-muted">{r.exercise_type}</span>

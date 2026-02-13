@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { getValidAccessToken, importSingleActivity } from "@/lib/strava-sync";
+import { canMakeRequests, consumeRequests } from "@/lib/rate-limit";
 
 // ═══ GET: Webhook 구독 검증 (Strava가 구독 생성 시 1회 호출) ═══
 export async function GET(req: NextRequest) {
@@ -63,6 +64,21 @@ async function handleActivityCreate(
     return;
   }
 
+  // Rate limit 여유 확인 (활동 1건 = detail + streams = 2 API 호출)
+  const hasCapacity = await canMakeRequests(2);
+
+  if (!hasCapacity) {
+    // rate limit 부족 → 큐에 추가하여 Cron Worker가 나중에 처리
+    console.log(`Rate limit low, queuing activity ${event.object_id} for user ${conn.user_id}`);
+    await supabase
+      .from("import_jobs")
+      .upsert(
+        { user_id: conn.user_id, strava_activity_id: event.object_id, status: "pending" },
+        { onConflict: "user_id,strava_activity_id", ignoreDuplicates: true }
+      );
+    return;
+  }
+
   const accessToken = await getValidAccessToken(supabase, conn);
   if (!accessToken) {
     console.warn(`Token expired for user ${conn.user_id}`);
@@ -75,6 +91,10 @@ async function handleActivityCreate(
     conn.user_id,
     supabase
   );
+
+  // API 호출 소비 기록
+  await consumeRequests(2);
+
   console.log(`Webhook import activity ${event.object_id}: ${result}`);
 }
 

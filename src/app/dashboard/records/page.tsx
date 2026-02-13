@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect, Fragment } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboard, RunningRecord, Shoe } from "../context";
-import { ArrowUp, ArrowDown, Plus, Pencil, Trash2, X, Loader2, Search, BarChart3, ChevronDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Plus, Pencil, Trash2, X, Loader2, Search, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { parsePaceToSeconds, formatPace, formatPaceColon, kmhToMinKm, paceToKmh } from "../utils";
 import { EXERCISE_TYPES, TAG_OPTIONS, getTypeStyle, getTagStyle } from "../constants";
+import { StravaIcon } from "@/components/icons/StravaIcon";
 
 type SortKey = "date" | "exercise_type" | "distance_km" | "duration" | "pace" | "cadence" | "avg_heart_rate";
 type SortDir = "asc" | "desc";
@@ -40,6 +42,7 @@ const MONTH_LABELS = [
 ];
 
 export default function RecordsPage() {
+  const router = useRouter();
   const { records, shoes, loading } = useDashboard();
 
   const years = useMemo(() => {
@@ -672,6 +675,7 @@ export default function RecordsPage() {
                   비고
                 </th>
                 <th className="w-[72px]" />
+                <th className="w-8" />
               </tr>
             </thead>
             <tbody>
@@ -687,7 +691,7 @@ export default function RecordsPage() {
                   <Fragment key={r.id}>
                     {showSep && (
                       <tr>
-                        <td colSpan={9} className="py-0">
+                        <td colSpan={10} className="py-0">
                           <div className="flex items-center gap-3 py-4 px-4">
                             <span className="text-sm font-black text-foreground tracking-widest uppercase">
                               {parseInt(curMonth)}월
@@ -702,8 +706,9 @@ export default function RecordsPage() {
                       const isDup = dupIds.has(r.id);
                       return (
                         <tr
-                          className={`border-b border-border/50 hover:bg-card-hover transition-colors ${isDup ? "bg-red-500/5" : ""}`}
+                          className={`border-b border-border/50 hover:bg-card-hover transition-colors cursor-pointer ${isDup ? "bg-red-500/5" : ""}`}
                           style={{ borderLeft: `3px solid ${ts.border}`, background: isDup ? undefined : ts.bg }}
+                          onClick={() => router.push(`/dashboard/records/${r.id}`)}
                         >
                           <td className="px-2 md:px-4 py-2 text-foreground whitespace-nowrap border-r border-border/20">
                             {isDup && <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5" />}
@@ -712,6 +717,11 @@ export default function RecordsPage() {
                           </td>
                           <td className="px-1.5 md:px-3 py-2 border-r border-border/20">
                             <div className="flex items-center gap-1 flex-wrap">
+                              {r.source === "strava" && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FC4C02]/15 text-[#FC4C02] border border-[#FC4C02]/25 whitespace-nowrap">
+                                  <StravaIcon size={10} />
+                                </span>
+                              )}
                               <span className={`inline-block px-1.5 md:px-2 py-0.5 rounded text-[10px] font-medium border whitespace-nowrap ${ts.badge}`}>
                                 {r.exercise_type}
                               </span>
@@ -758,6 +768,7 @@ export default function RecordsPage() {
                           </td>
                           <td
                             className={`px-4 py-2 text-[12px] max-w-[200px] ${savingId === r.id ? "opacity-50" : ""}`}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             {editingId === r.id ? (
                               <input
@@ -781,7 +792,7 @@ export default function RecordsPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-2 py-2 whitespace-nowrap">
+                          <td className="px-2 py-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center gap-0.5">
                               <button
                                 onClick={() => { setModalRecord(r); setModalOpen(true); }}
@@ -808,6 +819,9 @@ export default function RecordsPage() {
                               )}
                             </div>
                           </td>
+                          <td className="px-1 py-2">
+                            <ChevronRight className="h-3.5 w-3.5 text-muted/50" />
+                          </td>
                         </tr>
                       );
                     })()}
@@ -816,7 +830,7 @@ export default function RecordsPage() {
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-16 text-center text-muted text-sm">
+                  <td colSpan={10} className="px-4 py-16 text-center text-muted text-sm">
                     기록 없음
                   </td>
                 </tr>

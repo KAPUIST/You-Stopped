@@ -76,7 +76,74 @@ export async function getActivityDetail(accessToken: string, activityId: number)
   return res.json() as Promise<StravaDetailedActivity>;
 }
 
+const STREAM_KEYS = "time,distance,heartrate,altitude,velocity_smooth,cadence,grade_smooth,latlng";
+
+export async function getActivityStreams(accessToken: string, activityId: number) {
+  const res = await fetch(
+    `${STRAVA_API_BASE}/activities/${activityId}/streams?keys=${STREAM_KEYS}&key_type=time`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  // 404 = 스트림 없음 (수동 입력 등), 에러가 아님
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Streams fetch failed: ${res.status}`);
+  return res.json() as Promise<StravaStreamResponse>;
+}
+
+/** Strava 스트림 → 저장용 JSONB로 변환 + 다운샘플링 */
+export function normalizeStreams(raw: StravaStreamResponse, maxPoints = 600): StreamData {
+  const map: Record<string, number[] | number[][]> = {};
+  for (const stream of raw) {
+    map[stream.type] = stream.data;
+  }
+
+  const originalSize = (map.time as number[] | undefined)?.length ?? 0;
+  if (originalSize === 0) return { time: [] };
+
+  // 다운샘플링: maxPoints 이상이면 균등 간격으로 추출
+  const step = originalSize > maxPoints ? Math.ceil(originalSize / maxPoints) : 1;
+
+  const pick = <T>(arr: T[] | undefined): T[] | undefined => {
+    if (!arr) return undefined;
+    if (step === 1) return arr;
+    const out: T[] = [];
+    for (let i = 0; i < arr.length; i += step) out.push(arr[i]);
+    // 항상 마지막 포인트 포함
+    if (out[out.length - 1] !== arr[arr.length - 1]) out.push(arr[arr.length - 1]);
+    return out;
+  };
+
+  return {
+    time: pick(map.time as number[]) ?? [],
+    distance: pick(map.distance as number[]),
+    heartrate: pick(map.heartrate as number[]),
+    altitude: pick(map.altitude as number[]),
+    velocity_smooth: pick(map.velocity_smooth as number[]),
+    cadence: map.cadence ? pick((map.cadence as number[]).map((v) => Math.round(v * 2))) : undefined, // rpm → spm
+    grade_smooth: pick(map.grade_smooth as number[]),
+    latlng: pick(map.latlng as number[][]),
+  };
+}
+
 // --- Types ---
+
+export type StravaStreamResponse = Array<{
+  type: string;
+  data: number[] | number[][];
+  series_type: string;
+  original_size: number;
+  resolution: string;
+}>;
+
+export interface StreamData {
+  time: number[];
+  distance?: number[];
+  heartrate?: number[];
+  altitude?: number[];
+  velocity_smooth?: number[];
+  cadence?: number[];
+  grade_smooth?: number[];
+  latlng?: number[][];
+}
 
 export interface StravaActivity {
   id: number;

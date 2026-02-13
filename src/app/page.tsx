@@ -3,13 +3,22 @@ import {
   ChartNoAxesCombined,
   BrainCircuit,
   Watch,
+  Smartphone,
   ArrowRight,
   Zap,
   MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { NavLogo } from "./components/NavLogo";
 import PreviewSection from "./components/PreviewSection";
-import WaitlistForm from "./components/WaitlistForm";
+import FeedbackForm from "./components/WaitlistForm";
+
+const TYPE_DOT_COLORS: Record<string, string> = {
+  "로드": "bg-accent",
+  "트레드밀": "bg-sky-400",
+  "트랙": "bg-orange-400",
+  "트레일": "bg-emerald-400",
+};
 
 function MockDataRow({
   date,
@@ -17,6 +26,7 @@ function MockDataRow({
   distance,
   time,
   pace,
+  cadence,
   hr,
   highlighted,
 }: {
@@ -25,22 +35,27 @@ function MockDataRow({
   distance: string;
   time: string;
   pace: string;
+  cadence: string;
   hr: string;
   highlighted?: boolean;
 }) {
   return (
     <div
-      className={`grid grid-cols-6 gap-2 px-3 py-2 text-xs font-mono rounded-lg transition-colors ${
+      className={`grid grid-cols-7 gap-2 px-3 py-2 text-xs font-mono rounded-lg transition-colors ${
         highlighted
           ? "bg-accent/10 text-accent border border-accent/20"
           : "text-muted hover:bg-card-hover"
       }`}
     >
       <span>{date}</span>
-      <span>{type}</span>
+      <span className="flex items-center gap-1.5">
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${TYPE_DOT_COLORS[type] ?? "bg-zinc-400"}`} />
+        {type}
+      </span>
       <span>{distance}</span>
       <span>{time}</span>
       <span>{pace}</span>
+      <span>{cadence}</span>
       <span>{hr}</span>
     </div>
   );
@@ -52,14 +67,7 @@ export default function Home() {
       {/* Nav */}
       <nav className="fixed top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-              <Zap className="h-4 w-4 text-background" />
-            </div>
-            <span className="text-lg font-bold tracking-tight">
-              you<span className="text-accent">Stopped</span>
-            </span>
-          </div>
+          <NavLogo />
           <div className="flex items-center gap-4">
             <Link
               href="/blog"
@@ -67,12 +75,12 @@ export default function Home() {
             >
               블로그
             </Link>
-            <a
-              href="#waitlist"
+            <Link
+              href="/login"
               className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-background transition-all hover:bg-accent-dim hover:scale-105"
             >
-              사전 등록
-            </a>
+              시작하기
+            </Link>
           </div>
         </div>
       </nav>
@@ -104,19 +112,18 @@ export default function Home() {
                 운동 끝나고 워치 한 번 보고, 어제보다 나았는지도 모른 채
                 잊혀지는 데이터.{" "}
                 <span className="text-foreground font-medium">
-                  사진 한 장이면 기록 끝.
-                </span>{" "}
-                AI가 성적표로 만들어드립니다.
+                  기록이 쌓이면, 스토리가 됩니다.
+                </span>
               </p>
 
               <div className="flex flex-col gap-4 sm:flex-row">
-                <a
-                  href="#waitlist"
+                <Link
+                  href="/login"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-8 py-4 text-base font-bold text-background transition-all hover:bg-accent-dim hover:scale-105 animate-pulse-glow"
                 >
-                  출시 알림 받기
+                  무료로 시작하기
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </Link>
                 <a
                   href="#roadmap"
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-8 py-4 text-base font-medium text-foreground transition-colors hover:bg-card"
@@ -139,12 +146,13 @@ export default function Home() {
                 </div>
 
                 {/* Table header */}
-                <div className="grid grid-cols-6 gap-2 px-3 py-2 text-xs text-muted border-b border-border mb-1">
+                <div className="grid grid-cols-7 gap-2 px-3 py-2 text-xs text-muted border-b border-border mb-1">
                   <span>날짜</span>
-                  <span>종류</span>
+                  <span>유형</span>
                   <span>거리</span>
                   <span>시간</span>
                   <span>페이스</span>
+                  <span>케이던스</span>
                   <span>심박</span>
                 </div>
 
@@ -154,7 +162,8 @@ export default function Home() {
                     type="트레드밀"
                     distance="11.25"
                     time="56:27"
-                    pace="12.2"
+                    pace={`5'01"`}
+                    cadence="172"
                     hr="145"
                   />
                   <MockDataRow
@@ -162,7 +171,8 @@ export default function Home() {
                     type="트레드밀"
                     distance="10.0"
                     time="1:01:46"
-                    pace="9.9"
+                    pace={`6'10"`}
+                    cadence="168"
                     hr="147"
                   />
                   <MockDataRow
@@ -170,7 +180,8 @@ export default function Home() {
                     type="트레드밀"
                     distance="3.5"
                     time="25:15"
-                    pace="8.4"
+                    pace={`7'13"`}
+                    cadence="164"
                     hr="132"
                   />
                   <MockDataRow
@@ -178,7 +189,8 @@ export default function Home() {
                     type="트랙"
                     distance="10.01"
                     time="45:59"
-                    pace="4:36"
+                    pace={`4'36"`}
+                    cadence="186"
                     hr="174"
                     highlighted
                   />
@@ -187,7 +199,8 @@ export default function Home() {
                     type="트레드밀"
                     distance="10.0"
                     time="1:01:46"
-                    pace="9.9"
+                    pace={`6'10"`}
+                    cadence="168"
                     hr="147"
                   />
                   <MockDataRow
@@ -195,7 +208,8 @@ export default function Home() {
                     type="트랙"
                     distance="11.5"
                     time="55:20"
-                    pace="4:48"
+                    pace={`4'48"`}
+                    cadence="184"
                     hr="168"
                   />
                 </div>
@@ -267,7 +281,7 @@ export default function Home() {
             <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               로드맵
             </h2>
-            <p className="mt-4 text-muted">사진 기록에서 시작해, AI 코칭까지</p>
+            <p className="mt-4 text-muted">데이터 연동에서 시작해, 맞춤 코칭까지</p>
           </div>
 
           <div className="relative">
@@ -276,36 +290,49 @@ export default function Home() {
 
             {[
               {
-                icon: Camera,
-                phase: "Phase 1",
-                title: "사진으로 기록",
-                desc: "스크린샷/사진 업로드 → AI 자동 인식 → 3초 기록 완료",
-                status: "개발 중",
-                active: true,
-              },
-              {
                 icon: ChartNoAxesCombined,
-                phase: "Phase 2",
-                title: "러닝 성적표",
-                desc: "한눈에 보이는 러닝 리포트. 월별 성장 추이, 개인기록 관리",
-                status: "예정",
+                phase: "Phase 1",
+                title: "대시보드",
+                desc: "러닝 데이터 대시보드, 기록 관리, 신발 마일리지, 개인기록 추적",
+                status: "완료",
                 active: false,
+                done: true,
               },
               {
                 icon: Watch,
+                phase: "Phase 2",
+                title: "Strava 연동",
+                desc: "Strava 계정 연동으로 러닝 데이터 자동 싱크. 수동 입력 없이 기록 관리",
+                status: "개발 중",
+                active: true,
+                done: false,
+              },
+              {
+                icon: Camera,
                 phase: "Phase 3",
-                title: "워치 자동 연동",
-                desc: "Garmin, Apple Watch에서 자동 싱크. 사진 업로드도 필요 없음",
+                title: "사진으로 기록",
+                desc: "스크린샷/사진 업로드 → 자동 인식 → 3초 기록 완료",
                 status: "예정",
                 active: false,
+                done: false,
               },
               {
                 icon: BrainCircuit,
                 phase: "Phase 4",
-                title: "AI 맞춤 코칭",
-                desc: "축적된 데이터 기반 AI 훈련 추천. 나만의 러닝 코치",
+                title: "맞춤 훈련 플랜",
+                desc: "개인 맞춤 훈련 플랜으로 목표 달성까지 함께하는 러닝 코치",
                 status: "예정",
                 active: false,
+                done: false,
+              },
+              {
+                icon: Smartphone,
+                phase: "Phase 5",
+                title: "모바일 앱",
+                desc: "언제 어디서든 내 러닝 기록을 확인하고, 푸시 알림으로 훈련 리마인더까지",
+                status: "예정",
+                active: false,
+                done: false,
               },
             ].map((item, i) => (
               <div
@@ -318,16 +345,24 @@ export default function Home() {
                 <div className="absolute left-8 md:left-1/2 -translate-x-1/2 z-10">
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                      item.active
+                      item.done
+                        ? "border-accent bg-accent text-background"
+                        : item.active
                         ? "border-accent bg-accent/20"
                         : "border-border bg-card"
                     }`}
                   >
-                    <item.icon
-                      className={`h-4 w-4 ${
-                        item.active ? "text-accent" : "text-muted"
-                      }`}
-                    />
+                    {item.done ? (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <item.icon
+                        className={`h-4 w-4 ${
+                          item.active ? "text-accent" : "text-muted"
+                        }`}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -339,7 +374,9 @@ export default function Home() {
                 >
                   <div
                     className={`rounded-2xl border p-6 transition-all ${
-                      item.active
+                      item.done
+                        ? "border-accent/20 bg-accent/5"
+                        : item.active
                         ? "border-accent/30 bg-accent/5"
                         : "border-border bg-card"
                     }`}
@@ -347,19 +384,21 @@ export default function Home() {
                     <div className="flex items-center gap-3 mb-3">
                       <span
                         className={`text-xs font-mono font-bold ${
-                          item.active ? "text-accent" : "text-muted"
+                          item.done || item.active ? "text-accent" : "text-muted"
                         }`}
                       >
                         {item.phase}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          item.active
+                          item.done
+                            ? "bg-accent/20 text-accent"
+                            : item.active
                             ? "bg-accent/20 text-accent"
                             : "bg-card-hover text-muted"
                         }`}
                       >
-                        {item.status}
+                        {item.done ? "✓ 완료" : item.status}
                       </span>
                     </div>
                     <h3 className="text-lg font-bold mb-2">{item.title}</h3>
@@ -374,23 +413,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA / Waitlist */}
-      <section id="waitlist" className="relative py-32 overflow-hidden">
+      {/* Feedback */}
+      <section id="feedback" className="relative py-32 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-accent/5 to-background" />
 
         <div className="relative mx-auto max-w-2xl px-6 text-center">
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl mb-4">
-            러닝 생활에
+            더 나은 서비스를 위해
             <br />
-            <span className="text-accent">불편한 점</span>이 있으신가요?
+            <span className="text-accent">피드백</span>을 들려주세요
           </h2>
           <p className="text-muted mb-12">
-            오픈채팅방에 오셔서 추가되었으면 하는 기능이나
+            추가되었으면 하는 기능이나 불편한 점을 알려주세요.
             <br className="hidden sm:block" />
-            러닝 생활의 불편함을 알려주세요. 해결해드리겠습니다.
+            여러분의 피드백이 다음 업데이트의 우선순위가 됩니다.
           </p>
 
-          <WaitlistForm />
+          <FeedbackForm />
 
           <div className="mt-6 flex justify-center">
             <a

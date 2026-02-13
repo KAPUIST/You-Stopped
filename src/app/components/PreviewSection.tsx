@@ -10,12 +10,9 @@ import {
   ArrowDown,
   ArrowUp,
   Minus,
-  Activity,
-  Flame,
   Timer,
   Heart,
   Route,
-  Target,
 } from "lucide-react";
 
 function Tab({
@@ -44,167 +41,166 @@ function Tab({
 // ─── 대시보드 오버뷰 ───
 function DashboardOverview() {
   return (
-    <div className="mb-8 rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-            <Activity className="h-4 w-4 text-background" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold text-foreground">
-              2월 러닝 리포트
-            </div>
-            <div className="text-[11px] text-foreground0">
-              2026.02.01 — 02.12 · 12일간 기록
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-green-500/10 border border-green-500/20 px-3 py-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-[10px] font-medium text-green-400">
-            기록 중
-          </span>
-        </div>
-      </div>
-
-      {/* Metric grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {[
-          {
-            icon: Route,
-            label: "총 거리",
-            value: "67.3",
-            unit: "km",
-            sub: "월목표 120km",
-            pct: 56,
-          },
-          {
-            icon: Flame,
-            label: "총 러닝",
-            value: "9",
-            unit: "회",
-            sub: "주 평균 4.5회",
-            pct: null,
-          },
-          {
-            icon: Timer,
-            label: "평균 페이스",
-            value: "5:12",
-            unit: "/km",
-            sub: "지난달 5:28",
-            pct: null,
-            trend: "up",
-          },
-          {
-            icon: Heart,
-            label: "평균 심박",
-            value: "156",
-            unit: "bpm",
-            sub: "지난달 151",
-            pct: null,
-            trend: "up_bad",
-          },
-          {
-            icon: Trophy,
-            label: "이달 PR",
-            value: "2",
-            unit: "건",
-            sub: "10K · 3K 갱신",
-            pct: null,
-          },
-          {
-            icon: Target,
-            label: "VDOT",
-            value: "52.1",
-            unit: "",
-            sub: "지난달 50.8",
-            pct: null,
-            trend: "up",
-          },
-        ].map((m) => (
-          <div
-            key={m.label}
-            className="rounded-xl border border-border bg-background/60 p-4"
-          >
-            <div className="flex items-center gap-1.5 mb-2">
-              <m.icon className="h-3.5 w-3.5 text-foreground0" />
-              <span className="text-[10px] text-foreground0">{m.label}</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold font-mono text-foreground">
-                {m.value}
+    <div className="mb-8 space-y-3">
+      {/* Header + Period Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h3 className="text-xl font-bold text-foreground tracking-tight">
+          오버뷰
+        </h3>
+        <div className="flex items-center gap-0.5 bg-card rounded-lg p-1 border border-border">
+          {["1달", "3달", "6달", "1년", "전체"].map((label, i) => (
+            <div key={label} className="flex items-center gap-0.5">
+              {label === "전체" && <div className="w-px h-4 bg-border mx-0.5" />}
+              <span
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  i === 1
+                    ? "bg-accent text-background"
+                    : "text-muted"
+                }`}
+              >
+                {label}
               </span>
-              <span className="text-xs text-foreground0">{m.unit}</span>
-              {"trend" in m && m.trend && (
-                <span className="ml-auto">
-                  {m.trend === "up" ? (
-                    <ArrowUp className="h-3 w-3 text-accent" />
-                  ) : m.trend === "up_bad" ? (
-                    <ArrowUp className="h-3 w-3 text-red-400" />
-                  ) : (
-                    <ArrowDown className="h-3 w-3 text-red-400" />
-                  )}
-                </span>
-              )}
             </div>
-            <div className="mt-1.5 text-[10px] text-muted/70">{m.sub}</div>
-            {m.pct !== null && (
-              <div className="mt-2 h-1 w-full rounded-full bg-border">
-                <div
-                  className="h-full rounded-full bg-accent/60"
-                  style={{ width: `${m.pct}%` }}
-                />
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Mini week heatmap + AI summary */}
-      <div className="grid sm:grid-cols-[1fr_1fr] gap-4">
-        {/* Weekly activity */}
-        <div className="rounded-xl border border-border bg-background/60 p-4">
-          <div className="text-[10px] text-foreground0 mb-3">이번 주 활동</div>
-          <div className="flex gap-1.5">
-            {[
-              { day: "월", km: 11.25, active: true },
-              { day: "화", km: 10.0, active: true },
-              { day: "수", km: 3.5, active: true },
-              { day: "목", km: 10.01, active: true },
-              { day: "금", km: 10.0, active: true },
-              { day: "토", km: 0, active: false },
-              { day: "일", km: 11.5, active: true },
-            ].map((d) => (
-              <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
-                <div
-                  className={`w-full aspect-square rounded-md flex items-center justify-center text-[9px] font-mono ${
-                    !d.active
-                      ? "bg-card-hover/50 text-muted/50"
-                      : d.km >= 10
-                        ? "bg-accent/30 text-accent"
-                        : "bg-accent/10 text-accent/60"
-                  }`}
-                >
-                  {d.active ? d.km.toFixed(1) : "—"}
-                </div>
-                <span className="text-[9px] text-muted/70">{d.day}</span>
-              </div>
+      {/* Hero Card + Stat Cards (2+1+1 layout) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Hero: 총 거리 + 총 러닝 + 총 시간 */}
+        <div
+          className="col-span-2 rounded-xl border border-accent/15 p-4 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(var(--accent-rgb), 0.06) 0%, rgba(var(--accent-rgb), 0.02) 70%)",
+          }}
+        >
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <Route className="h-3.5 w-3.5 text-accent" />
+              <span className="text-[11px] font-medium text-muted">총 거리 · 총 러닝 · 총 시간</span>
+            </div>
+
+            <div className="flex items-baseline gap-3 md:gap-4">
+              <p>
+                <span className="text-2xl md:text-3xl font-bold font-mono text-accent leading-none">
+                  287
+                </span>
+                <span className="text-sm font-normal text-muted ml-1">km</span>
+              </p>
+              <div className="h-6 w-px bg-border/50" />
+              <p>
+                <span className="text-base md:text-lg font-bold font-mono text-foreground leading-none">
+                  38
+                </span>
+                <span className="text-xs font-normal text-muted ml-1">회</span>
+              </p>
+              <div className="h-6 w-px bg-border/50" />
+              <p>
+                <span className="text-base md:text-lg font-bold font-mono text-foreground leading-none">
+                  28:42
+                </span>
+                <span className="text-xs font-normal text-muted ml-1">시간</span>
+              </p>
+            </div>
+
+            {/* 전기간 비교 */}
+            <div className="mt-2.5 pt-2 border-t border-accent/10 flex items-center gap-3 md:gap-4 text-[10px] md:text-[11px] font-mono">
+              <span className="text-muted">vs 이전 3달</span>
+              <span className="text-accent">
+                +42km<span className="text-muted ml-0.5">(+17%)</span>
+              </span>
+              <span className="text-accent">
+                +5회<span className="text-muted ml-0.5">(+15%)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 평균 페이스 */}
+        <div className="rounded-xl border border-border bg-card p-3.5">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Timer className="h-3 w-3 text-muted" />
+            <span className="text-[11px] font-medium text-muted">평균 페이스</span>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+            <p>
+              <span className="text-xl font-bold font-mono text-foreground leading-none">
+                {`5'28"`}
+              </span>
+              <span className="text-xs font-normal text-muted ml-0.5">/km</span>
+            </p>
+            <p>
+              <span className="text-base font-bold font-mono text-muted leading-none">
+                11.0
+              </span>
+              <span className="text-[10px] font-normal text-muted ml-0.5">km/h</span>
+            </p>
+          </div>
+          <div className="mt-1.5">
+            <span className="inline-flex items-center gap-0.5 font-mono text-accent text-[11px]">
+              <TrendingUp className="h-2.5 w-2.5" />
+              +3% 개선
+            </span>
+          </div>
+        </div>
+
+        {/* 심박 */}
+        <div className="rounded-xl border border-border bg-card p-3.5">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Heart className="h-3 w-3 text-red-400/80" />
+            <span className="text-[11px] font-medium text-muted">심박</span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] text-muted w-6">평균</span>
+              <span className="text-xl font-bold font-mono text-foreground leading-none">156</span>
+              <span className="text-[10px] font-normal text-muted">bpm</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] text-muted w-6">최고</span>
+              <span className="text-base font-bold font-mono text-red-400 leading-none">186</span>
+              <span className="text-[10px] font-normal text-muted">bpm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly Chart + AI Summary */}
+      <div className="grid sm:grid-cols-[1fr_1fr] gap-3">
+        {/* Weekly distance mini chart */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-bold text-foreground">주간 거리</span>
+            <span className="text-xs font-mono text-muted">최근 12주</span>
+          </div>
+          <div className="flex items-end gap-1.5 h-20">
+            {[18, 32, 45, 28, 52, 61, 38, 55, 48, 67, 42, 56].map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-sm"
+                style={{
+                  height: `${(h / 67) * 100}%`,
+                  background: i === 11 ? "var(--accent-solid)" : i >= 9 ? "rgba(var(--accent-rgb), 0.4)" : "rgba(var(--accent-rgb), 0.15)",
+                }}
+              />
             ))}
           </div>
         </div>
 
         {/* AI quick summary */}
-        <div className="rounded-xl border border-accent/10 bg-accent/[0.03] p-4">
+        <div className="rounded-xl border border-accent/10 bg-accent/[0.03] p-4 relative">
+          <div className="absolute top-3 right-3 rounded-full bg-accent/15 border border-accent/25 px-2 py-0.5 text-[9px] font-medium text-accent">
+            Coming Soon
+          </div>
           <div className="flex items-center gap-1.5 mb-3">
             <BrainCircuit className="h-3.5 w-3.5 text-accent" />
             <span className="text-[10px] text-accent">AI 주간 요약</span>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 opacity-60">
             {[
               "이번 주 6회 러닝, 총 56.3km 소화",
-              "10K PR 갱신 (45:59) — VDOT 52.1 달성",
-              "심박 상승 추세 감지 → 내일 회복일 권장",
+              "10K PR 갱신 (45:59)",
+              "심박 상승 추세 감지 → 회복일 권장",
               "다음 주 목표: 볼륨 유지 + 회복일 추가",
             ].map((line, i) => (
               <div key={i} className="flex items-start gap-2">
@@ -213,9 +209,7 @@ function DashboardOverview() {
                 </span>
                 <span
                   className={`text-[11px] leading-relaxed ${
-                    i === 2
-                      ? "text-amber-400"
-                      : "text-muted"
+                    i === 2 ? "text-amber-400" : "text-muted"
                   }`}
                 >
                   {line}
@@ -401,13 +395,13 @@ function PaceChart() {
 // ─── 신발 마일리지 ───
 const shoeViews: Record<
   string,
-  { name: string; total: number; status: string; pct: number }[]
+  { name: string; total: number; status: string; pct: number; breakdown?: { type: string; dist: number }[]; tags?: string[] }[]
 > = {
   전체: [
-    { name: "줌플라이 6", total: 618, status: "교체임박", pct: 77 },
-    { name: "프로 4", total: 388, status: "사용중", pct: 48 },
-    { name: "베이퍼플라이 4", total: 41, status: "레이스용", pct: 5 },
-    { name: "페가수스 41", total: 12, status: "신규", pct: 1.5 },
+    { name: "줌플라이 6", total: 618, status: "교체임박", pct: 77, breakdown: [{ type: "로드", dist: 554 }, { type: "트레드밀", dist: 64 }], tags: ["훈련"] },
+    { name: "프로 4", total: 388, status: "사용중", pct: 48, breakdown: [{ type: "로드", dist: 388 }], tags: ["훈련"] },
+    { name: "베이퍼플라이 4", total: 41, status: "레이스용", pct: 5, breakdown: [{ type: "로드", dist: 41 }], tags: ["대회"] },
+    { name: "페가수스 41", total: 12, status: "신규", pct: 1.5, breakdown: [{ type: "트레드밀", dist: 12 }], tags: ["보조"] },
   ],
   로드: [
     { name: "줌플라이 6", total: 554, status: "메인", pct: 69 },
@@ -473,12 +467,29 @@ function ShoeCard() {
                 >
                   {shoe.status}
                 </span>
+                {shoe.tags?.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full px-1.5 py-0.5 text-[9px] bg-card-hover text-muted"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
               <span className="text-xs font-mono text-muted">
                 {shoe.total}
                 <span className="text-muted/70">/800</span>km
               </span>
             </div>
+            {shoe.breakdown && (
+              <div className="flex items-center gap-2 mb-1.5">
+                {shoe.breakdown.map((b) => (
+                  <span key={b.type} className="text-[10px] font-mono text-muted">
+                    {b.type} {b.dist}km
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="h-2 w-full rounded-full bg-border overflow-hidden relative">
               <div className="absolute right-0 top-0 bottom-0 w-px bg-muted/40" />
               <div
@@ -589,7 +600,11 @@ function PRCard() {
       )}
 
       {view === "목표" && (
-        <>
+        <div className="relative">
+          <div className="absolute top-0 right-0 z-10 rounded-full bg-accent/15 border border-accent/25 px-2 py-0.5 text-[9px] font-medium text-accent">
+            Coming Soon
+          </div>
+          <div className="opacity-60">
           <div className="grid grid-cols-3 gap-3">
             {prGoals.map((g) => (
               <div
@@ -617,11 +632,16 @@ function PRCard() {
             <span className="text-accent font-medium">AI 분석:</span> 10K
             서브45 달성이 가장 가까운 목표입니다. 주 1회 4:20 페이스 인터벌을 추가하세요.
           </p>
-        </>
+          </div>
+        </div>
       )}
 
       {view === "예측" && (
-        <>
+        <div className="relative">
+          <div className="absolute top-0 right-0 z-10 rounded-full bg-accent/15 border border-accent/25 px-2 py-0.5 text-[9px] font-medium text-accent">
+            Coming Soon
+          </div>
+          <div className="opacity-60">
           <div className="grid grid-cols-3 gap-3">
             {prPredict.map((p) => (
               <div
@@ -641,7 +661,8 @@ function PRCard() {
             최근 10K 기록과 훈련 데이터를 종합하여 산출한 예측 기록입니다. 현재
             컨디션 유지 시 달성 가능한 수치입니다.
           </p>
-        </>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -654,7 +675,11 @@ function AICard() {
   const [view, setView] = useState<AIView>("컨디션");
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
+    <div className="rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30 relative">
+      <div className="absolute top-4 right-4 z-10 rounded-full bg-accent/15 border border-accent/25 px-2.5 py-1 text-[10px] font-medium text-accent">
+        Coming Soon
+      </div>
+      <div className="opacity-60">
       <div className="flex items-center gap-2 mb-4">
         <BrainCircuit className="h-5 w-5 text-accent" />
         <span className="text-sm font-semibold text-foreground">AI 데이터 분석</span>
@@ -848,6 +873,7 @@ function AICard() {
           </p>
         </div>
       )}
+      </div>{/* end opacity-60 */}
     </div>
   );
 }
@@ -1123,11 +1149,14 @@ function TrainingPlan() {
 
   return (
     <div className="mt-8 rounded-2xl border border-border bg-card p-6 transition-all hover:border-accent/30">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">🗓️</span>
           <span className="text-sm font-semibold text-foreground">
             AI 맞춤 훈련 플랜
+          </span>
+          <span className="rounded-full bg-accent/15 border border-accent/25 px-2 py-0.5 text-[9px] font-medium text-accent">
+            Coming Soon
           </span>
         </div>
         <div className="flex gap-1.5">
@@ -1142,6 +1171,7 @@ function TrainingPlan() {
         </div>
       </div>
 
+      <div className="opacity-60">
       <div className="flex items-center justify-between mb-4 rounded-lg bg-accent/5 border border-accent/10 px-4 py-2.5">
         <span className="text-xs text-muted">{plan.summary}</span>
         <span className="text-xs font-mono font-bold text-accent">
@@ -1220,6 +1250,7 @@ function TrainingPlan() {
           {plan.aiNote}
         </p>
       </div>
+      </div>{/* end opacity-60 */}
     </div>
   );
 }

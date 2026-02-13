@@ -4,6 +4,8 @@
 import { createServerSupabase } from "@/lib/supabase-server";
 import {
   getActivityDetail,
+  getActivityStreams,
+  normalizeStreams,
   refreshAccessToken,
   StravaDetailedActivity,
 } from "@/lib/strava";
@@ -122,6 +124,22 @@ export async function importSingleActivity(
       }));
 
       await sb.from("activity_best_efforts").insert(efforts);
+    }
+
+    // streams 저장 (실패해도 레코드 임포트는 유지)
+    try {
+      const rawStreams = await getActivityStreams(accessToken, activityId);
+      if (rawStreams) {
+        const streamData = normalizeStreams(rawStreams);
+        await sb.from("activity_streams").insert({
+          record_id: inserted.id,
+          stream_data: streamData,
+          data_points: streamData.time.length,
+        });
+      }
+    } catch (streamErr) {
+      console.warn(`Streams fetch failed for activity ${activityId}:`, streamErr);
+      // 스트림 실패는 무시 — 기본 레코드는 이미 저장됨
     }
 
     return "imported";

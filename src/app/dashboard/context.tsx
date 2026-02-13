@@ -15,6 +15,7 @@ export interface RunningRecord {
   notes: string | null;
   shoe_id: string | null;
   tags: string[];
+  source: string;
 }
 
 export interface Shoe {

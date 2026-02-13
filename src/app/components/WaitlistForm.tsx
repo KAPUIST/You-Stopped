@@ -2,20 +2,19 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { Send, Check, Loader2 } from "lucide-react";
 
-export default function WaitlistForm() {
+export default function FeedbackForm() {
+  const [feedback, setFeedback] = useState("");
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim()) {
-      setErrorMsg("이메일을 입력해주세요.");
+    if (!feedback.trim()) {
+      setErrorMsg("피드백 내용을 입력해주세요.");
       setStatus("error");
       return;
     }
@@ -23,18 +22,13 @@ export default function WaitlistForm() {
     setStatus("loading");
     setErrorMsg("");
 
-    const { error } = await supabase.from("waitlist").insert({
-      email: email.trim(),
-      name: name.trim() || null,
-      phone: phone.trim() || null,
+    const { error } = await supabase.from("feedback").insert({
+      message: feedback.trim(),
+      email: email.trim() || null,
     });
 
     if (error) {
-      if (error.code === "23505") {
-        setErrorMsg("이미 등록된 이메일입니다.");
-      } else {
-        setErrorMsg("문제가 발생했습니다. 다시 시도해주세요.");
-      }
+      setErrorMsg("문제가 발생했습니다. 다시 시도해주세요.");
       setStatus("error");
       return;
     }
@@ -49,10 +43,10 @@ export default function WaitlistForm() {
           <Check className="h-6 w-6 text-background" />
         </div>
         <h3 className="text-lg font-bold text-foreground mb-2">
-          등록 완료!
+          감사합니다!
         </h3>
         <p className="text-sm text-muted">
-          출시 소식을 가장 먼저 알려드리겠습니다.
+          소중한 피드백이 전달되었습니다. 빠르게 반영하겠습니다.
         </p>
       </div>
     );
@@ -60,33 +54,23 @@ export default function WaitlistForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-full max-w-md mx-auto">
-      <input
-        type="email"
-        placeholder="이메일 *"
-        value={email}
+      <textarea
+        placeholder="불편한 점이나 추가되었으면 하는 기능을 알려주세요"
+        value={feedback}
         onChange={(e) => {
-          setEmail(e.target.value);
+          setFeedback(e.target.value);
           if (status === "error") setStatus("idle");
         }}
-        required
+        rows={3}
+        className="w-full rounded-xl border border-border bg-card px-4 py-3.5 text-sm text-foreground placeholder:text-muted outline-none transition-colors focus:border-accent/50 focus:bg-card-hover resize-none"
+      />
+      <input
+        type="email"
+        placeholder="이메일 (선택 · 답변 받으실 경우)"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         className="w-full rounded-xl border border-border bg-card px-4 py-3.5 text-sm text-foreground placeholder:text-muted outline-none transition-colors focus:border-accent/50 focus:bg-card-hover"
       />
-      <div className="grid grid-cols-2 gap-3">
-        <input
-          type="text"
-          placeholder="이름 (선택)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-border bg-card px-4 py-3.5 text-sm text-foreground placeholder:text-muted outline-none transition-colors focus:border-accent/50 focus:bg-card-hover"
-        />
-        <input
-          type="tel"
-          placeholder="연락처 (선택)"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full rounded-xl border border-border bg-card px-4 py-3.5 text-sm text-foreground placeholder:text-muted outline-none transition-colors focus:border-accent/50 focus:bg-card-hover"
-        />
-      </div>
 
       {status === "error" && (
         <p className="text-xs text-red-400 text-center">{errorMsg}</p>
@@ -101,8 +85,8 @@ export default function WaitlistForm() {
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           <>
-            출시 알림 신청
-            <ArrowRight className="h-4 w-4" />
+            피드백 보내기
+            <Send className="h-4 w-4" />
           </>
         )}
       </button>
