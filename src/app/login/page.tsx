@@ -94,7 +94,7 @@ export default function LoginPage() {
 
       router.push("/dashboard");
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -105,6 +105,12 @@ export default function LoginPage() {
       if (error) {
         console.error("Supabase signup error:", error.message, error.status);
         setErrorMsg(localizeSignupError(error.message));
+        setStatus("error");
+        return;
+      }
+
+      if (data.user?.identities?.length === 0) {
+        setErrorMsg("이미 가입된 이메일입니다.");
         setStatus("error");
         return;
       }
