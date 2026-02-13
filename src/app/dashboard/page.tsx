@@ -847,36 +847,67 @@ export default function OverviewPage() {
             style={{ animationDelay: "360ms" }}
           >
             <h3 className="text-sm font-bold text-foreground mb-2.5">요일별 빈도</h3>
-            <div key={`dw-${ak}`} className="flex items-end gap-2 h-[80px]">
-              {dayOfWeekCounts.map((count, i) => {
-                const isMax = count === Math.max(...dayOfWeekCounts);
-                const barH = Math.max((count / maxDayCount) * 65, 2);
+            {(() => {
+              const chartH = 90;
+              const barArea = chartH - 18;
+              const niceMax = Math.ceil(maxDayCount / 5) * 5 || 5;
+              const gridLines = [0, Math.round(niceMax / 2), niceMax];
 
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group relative">
-                    <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <span className="text-[11px] font-mono text-accent">{count}</span>
-                    </div>
-                    <div
-                      className="w-full rounded-sm bar-grow"
-                      style={{
-                        height: barH,
-                        animationDelay: `${600 + i * 50}ms`,
-                        background: isMax
-                          ? "var(--accent-solid)"
-                          : count > 0
-                          ? "var(--accent-glow)"
-                          : "var(--bar-empty)",
-                        boxShadow: isMax ? "0 0 8px var(--accent-glow)" : "none",
-                      }}
-                    />
-                    <span className={`text-[11px] font-mono ${isMax ? "text-accent font-bold" : "text-muted"}`}>
-                      {dayLabels[i]}
-                    </span>
+              return (
+                <div key={`dw-${ak}`} className="flex" style={{ height: chartH }}>
+                  {/* Y-axis */}
+                  <div className="flex flex-col justify-between pr-2 pb-5 shrink-0" style={{ height: barArea }}>
+                    {[...gridLines].reverse().map((v) => (
+                      <span key={v} className="text-[11px] font-mono text-muted leading-none w-5 text-right">
+                        {v}
+                      </span>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Chart */}
+                  <div className="flex-1 relative">
+                    {gridLines.map((v) => (
+                      <div
+                        key={v}
+                        className="absolute left-0 right-0 border-t border-muted/20"
+                        style={{ bottom: `${(v / niceMax) * barArea + 20}px` }}
+                      />
+                    ))}
+
+                    <div className="flex items-end gap-2 h-full relative z-10">
+                      {dayOfWeekCounts.map((count, i) => {
+                        const isMax = count === Math.max(...dayOfWeekCounts);
+                        const barH = Math.max((count / niceMax) * barArea, count > 0 ? 2 : 0);
+
+                        return (
+                          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 group relative">
+                            <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              <span className="text-[11px] font-mono text-accent">{count}</span>
+                            </div>
+                            <div
+                              className="w-full rounded-sm bar-grow"
+                              style={{
+                                height: barH,
+                                animationDelay: `${600 + i * 50}ms`,
+                                background: isMax
+                                  ? "var(--accent-solid)"
+                                  : count > 0
+                                  ? "var(--accent-glow)"
+                                  : "var(--bar-empty)",
+                                boxShadow: isMax ? "0 0 8px var(--accent-glow)" : "none",
+                              }}
+                            />
+                            <span className={`text-[11px] font-mono ${isMax ? "text-accent font-bold" : "text-muted"}`}>
+                              {dayLabels[i]}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

@@ -19,7 +19,12 @@ import {
   Monitor,
   Check,
   User,
+  RefreshCw,
+  CheckCircle2,
+  ExternalLink,
 } from "lucide-react";
+
+const STRAVA_BRAND = "#FC4C02";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "오버뷰", icon: LayoutDashboard, active: true },
@@ -51,6 +56,10 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -79,6 +88,15 @@ export default function DashboardLayout({
 
       setAuthed(true);
       setUserName(session.user.email ?? "");
+      setUserId(session.user.id);
+
+      // Strava 연결 상태 확인
+      const { data: stravaConn } = await supabase
+        .from("strava_connections")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (stravaConn) setStravaConnected(true);
 
       const [recordsRes, shoesRes] = await Promise.all([
         supabase
@@ -118,6 +136,68 @@ export default function DashboardLayout({
 
     return () => subscription.unsubscribe();
   }, [router]);
+
+  const handleStravaConnect = () => {
+    if (!userId) return;
+    const params = new URLSearchParams({
+      client_id: process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID!,
+      response_type: "code",
+      redirect_uri: `${process.env.NEXT_PUBLIC_SITE_URL}/api/strava/callback`,
+      scope: "activity:read_all",
+      approval_prompt: "auto",
+      state: userId,
+    });
+    window.location.href = `https://www.strava.com/oauth/authorize?${params}`;
+  };
+
+  const handleStravaSync = async () => {
+    if (!userId || syncing) return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/strava/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (res.status === 401 && data.error === "token_expired") {
+        // refresh token 무효화 → 재연결 필요
+        setStravaConnected(false);
+        setSyncResult("재연결 필요");
+        return;
+      }
+      if (data.newly_imported > 0) {
+        setSyncResult(`${data.newly_imported}건 새로 동기화`);
+        // 데이터 새로고침
+        const { data: newRecords } = await supabase
+          .from("running_records")
+          .select("id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags")
+          .order("date", { ascending: false });
+        if (newRecords) setRecords(newRecords);
+      } else {
+        setSyncResult("이미 최신 상태");
+      }
+    } catch {
+      setSyncResult("동기화 실패");
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncResult(null), 3000);
+    }
+  };
+
+  // ?strava_connected=true 처리
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("strava_connected") === "true") {
+      setStravaConnected(true);
+      // URL 정리
+      window.history.replaceState({}, "", pathname);
+      // 자동 동기화 시작
+      setTimeout(() => handleStravaSync(), 500);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -286,6 +366,35 @@ export default function DashboardLayout({
                       ))}
                     </div>
                   )}
+
+                  {/* Strava */}
+                  <div className="px-2 py-2 border-b border-border/50">
+                    <p className="px-2 py-1 text-xs text-muted">연동</p>
+                    {stravaConnected ? (
+                      <>
+                        <div className="flex items-center gap-3 px-2 py-1.5 text-sm">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: STRAVA_BRAND }} />
+                          <span className="text-foreground font-medium">Strava 연결됨</span>
+                        </div>
+                        <button
+                          onClick={() => { handleStravaSync(); setDropdownOpen(false); }}
+                          disabled={syncing}
+                          className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md text-sm hover:bg-card-hover transition-colors text-muted"
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${syncing ? "animate-spin" : ""}`} />
+                          <span>{syncing ? "동기화 중..." : syncResult || "지금 동기화"}</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => { handleStravaConnect(); setDropdownOpen(false); }}
+                        className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md text-sm hover:bg-card-hover transition-colors text-muted"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" style={{ color: STRAVA_BRAND }} />
+                        <span>Strava 연결하기</span>
+                      </button>
+                    )}
+                  </div>
 
                   {/* Logout */}
                   <div className="px-2 py-2">
