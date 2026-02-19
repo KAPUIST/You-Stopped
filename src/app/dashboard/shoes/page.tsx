@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useDashboard, type Shoe, type ShoeDistanceLog } from "../context";
+import { useDashboard, type Shoe, type ShoeDistanceLog, type RunningRecord } from "../context";
 import { supabase } from "@/lib/supabase";
 import {
   Plus,
@@ -82,12 +82,14 @@ export default function ShoesPage() {
     return map;
   }, [logs]);
 
-  // 신발별 연결된 running_records 누적거리
-  const linkedDistMap = useMemo(() => {
-    const map = new Map<string, number>();
+  // 신발별 연결된 running_records
+  const linkedRecordsByShoe = useMemo(() => {
+    const map = new Map<string, RunningRecord[]>();
     for (const r of records) {
       if (r.shoe_id && r.distance_km) {
-        map.set(r.shoe_id, (map.get(r.shoe_id) ?? 0) + r.distance_km);
+        const arr = map.get(r.shoe_id) ?? [];
+        arr.push(r);
+        map.set(r.shoe_id, arr);
       }
     }
     return map;
@@ -101,7 +103,7 @@ export default function ShoesPage() {
   // 요약 통계
   const getShoeTotal = (shoe: Shoe) => {
     const logDist = (logsByShoe.get(shoe.id) ?? []).reduce((s, l) => s + l.distance_km, 0);
-    const linkedDist = linkedDistMap.get(shoe.id) ?? 0;
+    const linkedDist = (linkedRecordsByShoe.get(shoe.id) ?? []).reduce((s, r) => s + (r.distance_km ?? 0), 0);
     return shoe.initial_distance_km + logDist + linkedDist;
   };
 
@@ -204,7 +206,7 @@ export default function ShoesPage() {
               key={shoe.id}
               shoe={shoe}
               logs={logsByShoe.get(shoe.id) ?? []}
-              linkedDist={linkedDistMap.get(shoe.id) ?? 0}
+              linkedRecords={linkedRecordsByShoe.get(shoe.id) ?? []}
               delay={120 + i * 40}
               onEdit={() => openEdit(shoe)}
               onLogsChange={refreshLogs}
@@ -226,14 +228,14 @@ export default function ShoesPage() {
 function ShoeCard({
   shoe,
   logs,
-  linkedDist,
+  linkedRecords,
   delay,
   onEdit,
   onLogsChange,
 }: {
   shoe: Shoe;
   logs: ShoeDistanceLog[];
-  linkedDist: number;
+  linkedRecords: RunningRecord[];
   delay: number;
   onEdit: () => void;
   onLogsChange: () => void;
@@ -248,16 +250,22 @@ function ShoeCard({
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
   const wellRef = useRef<HTMLDivElement>(null);
 
-  // 태그별 거리 breakdown
+  // 태그별 거리 breakdown (shoe_distance_logs + running_records 모두 포함)
   const typeBreakdown = useMemo(() => {
     const map = new Map<string, number>();
     for (const log of logs) {
       map.set(log.exercise_type, (map.get(log.exercise_type) ?? 0) + log.distance_km);
     }
+    for (const r of linkedRecords) {
+      if (r.distance_km) {
+        map.set(r.exercise_type, (map.get(r.exercise_type) ?? 0) + r.distance_km);
+      }
+    }
     return Array.from(map.entries()).sort(([, a], [, b]) => b - a);
-  }, [logs]);
+  }, [logs, linkedRecords]);
 
   const logDist = logs.reduce((s, l) => s + l.distance_km, 0);
+  const linkedDist = linkedRecords.reduce((s, r) => s + (r.distance_km ?? 0), 0);
   const totalDist = shoe.initial_distance_km + logDist + linkedDist;
   const percentage = Math.min((totalDist / shoe.max_distance_km) * 100, 100);
   const isWarning = percentage >= 80;
@@ -304,7 +312,20 @@ function ShoeCard({
     }, 0);
   }, []);
 
-  const recentLogs = logs.slice(0, 3);
+  // shoe_distance_logs + running_records 합쳐서 날짜순 정렬
+  const recentEntries = useMemo(() => {
+    const entries: { id: string; date: string; exercise_type: string; distance_km: number; source: "log" | "record" }[] = [];
+    for (const log of logs) {
+      entries.push({ id: log.id, date: log.date, exercise_type: log.exercise_type, distance_km: log.distance_km, source: "log" });
+    }
+    for (const r of linkedRecords) {
+      if (r.distance_km) {
+        entries.push({ id: r.id, date: r.date, exercise_type: r.exercise_type, distance_km: r.distance_km, source: "record" });
+      }
+    }
+    entries.sort((a, b) => b.date.localeCompare(a.date));
+    return entries.slice(0, 5);
+  }, [logs, linkedRecords]);
   const today = new Date().toISOString().split("T")[0];
 
   return (
@@ -503,23 +524,25 @@ function ShoeCard({
       )}
 
       {/* ── Recent Logs ───────────────────────── */}
-      {recentLogs.length > 0 && (
+      {recentEntries.length > 0 && (
         <div className="mb-3 space-y-0.5">
-          {recentLogs.map((log) => {
-            const style = getTypeStyle(log.exercise_type);
+          {recentEntries.map((entry) => {
+            const style = getTypeStyle(entry.exercise_type);
             return (
-              <div key={log.id} className="group/log flex items-center gap-2 text-[11px] py-0.5">
+              <div key={`${entry.source}-${entry.id}`} className="group/log flex items-center gap-2 text-[11px] py-0.5">
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${style.dot}`} />
-                <span className="text-muted font-mono">{formatCompactDate(log.date)}</span>
-                <span className="text-muted">{log.exercise_type}</span>
-                <span className="text-foreground font-mono font-medium">{log.distance_km}km</span>
-                <button
-                  onClick={() => handleDeleteLog(log.id)}
-                  disabled={deletingLogId === log.id}
-                  className="ml-auto p-0.5 rounded opacity-0 group-hover/log:opacity-100 text-muted hover:text-foreground transition-all disabled:opacity-50"
-                >
-                  {deletingLogId === log.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
-                </button>
+                <span className="text-muted font-mono">{formatCompactDate(entry.date)}</span>
+                <span className="text-muted">{entry.exercise_type}</span>
+                <span className="text-foreground font-mono font-medium">{entry.distance_km}km</span>
+                {entry.source === "log" ? (
+                  <button
+                    onClick={() => handleDeleteLog(entry.id)}
+                    disabled={deletingLogId === entry.id}
+                    className="ml-auto p-0.5 rounded opacity-0 group-hover/log:opacity-100 text-muted hover:text-foreground transition-all disabled:opacity-50"
+                  >
+                    {deletingLogId === entry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                  </button>
+                ) : null}
               </div>
             );
           })}

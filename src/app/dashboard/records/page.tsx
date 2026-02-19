@@ -271,7 +271,8 @@ export default function RecordsPage() {
         const cmp = cmpByKey(a, b, s.key);
         if (cmp !== 0) return s.dir === "asc" ? cmp : -cmp;
       }
-      return 0;
+      // 같은 날짜 내에서 최신 생성순
+      return (b.created_at ?? "").localeCompare(a.created_at ?? "");
     });
   }, [filtered, sorts]);
 

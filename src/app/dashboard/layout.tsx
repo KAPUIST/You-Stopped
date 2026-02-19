@@ -125,7 +125,7 @@ export default function DashboardLayout({
         supabase
           .from("running_records")
           .select(
-            "id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags, source"
+            "id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags, source, created_at"
           )
           .order("date", { ascending: false }),
         supabase
@@ -176,7 +176,7 @@ export default function DashboardLayout({
   const refreshRecords = useCallback(async () => {
     const { data: newRecords } = await supabase
       .from("running_records")
-      .select("id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags, source")
+      .select("id, date, exercise_type, distance_km, duration, pace_kmh, pace_minkm, cadence, avg_heart_rate, notes, shoe_id, tags, source, created_at")
       .order("date", { ascending: false });
     if (newRecords) setRecords(newRecords);
   }, []);

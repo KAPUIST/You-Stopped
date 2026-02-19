@@ -16,6 +16,7 @@ export interface RunningRecord {
   shoe_id: string | null;
   tags: string[];
   source: string;
+  created_at: string;
 }
 
 export interface Shoe {
