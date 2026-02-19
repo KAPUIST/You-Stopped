@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import Script from "next/script";
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useDashboard } from "../../context";
@@ -816,6 +817,7 @@ function ElevationFallbackContent({ splits, totalGain }: { splits: Split[]; tota
 function RouteSection({ polyline, latlng }: { polyline: string | null; latlng: number[][] | null }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState(false);
+  const [scriptReady, setScriptReady] = useState(false);
 
   const points = useMemo(() => {
     if (latlng && latlng.length >= 2) return latlng as [number, number][];
@@ -882,39 +884,30 @@ function RouteSection({ polyline, latlng }: { polyline: string | null; latlng: n
     }
   }, [points]);
 
+  // scriptReady 또는 이미 로드된 경우 지도 초기화
   useEffect(() => {
     if (points.length < 2) return;
-
-    const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
-    if (!KAKAO_KEY) { console.error("[KakaoMap] NEXT_PUBLIC_KAKAO_MAP_KEY not set"); setMapError(true); return; }
-
-    // Already loaded
     if (window.kakao?.maps) {
       window.kakao.maps.load(initMap);
-      return;
+    } else if (scriptReady) {
+      window.kakao?.maps?.load(initMap);
     }
+  }, [points, initMap, scriptReady]);
 
-    // Check for existing script tag
-    const existing = document.querySelector<HTMLScriptElement>(
-      'script[src*="dapi.kakao.com/v2/maps/sdk.js"]',
-    );
-    if (existing) {
-      existing.addEventListener("load", () => window.kakao.maps.load(initMap));
-      return;
-    }
-
-    // Dynamic script injection
-    const script = document.createElement("script");
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false`;
-    script.async = true;
-    script.onload = () => window.kakao.maps.load(initMap);
-    script.onerror = (e) => { console.error("[KakaoMap] Script load error:", e); setMapError(true); };
-    document.head.appendChild(script);
-  }, [points, initMap]);
+  const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5 md:p-6 mb-4 card-reveal overflow-hidden" style={{ animationDelay: "250ms" }}>
       <h2 className="text-sm font-bold text-foreground mb-4">경로</h2>
+
+      {points.length >= 2 && KAKAO_KEY && (
+        <Script
+          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_KEY}&autoload=false`}
+          strategy="afterInteractive"
+          onReady={() => setScriptReady(true)}
+          onError={() => { console.error("[KakaoMap] next/script load failed"); setMapError(true); }}
+        />
+      )}
 
       {points.length < 2 ? (
         <EmptyState message="GPS 데이터 없음" />
